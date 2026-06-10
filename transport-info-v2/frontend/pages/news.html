@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Yangiliklar — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html" class="nav-link"><span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"><span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html" class="nav-link"><span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html" class="nav-link"><span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html" class="nav-link active"><span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html" class="nav-link admin-link"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status" style="font-size:11px;margin-bottom:6px"></div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Yangiliklar</h1><p>E'lonlar va tizim xabarlari</p></div>
+    <div class="header-actions"><div class="user-badge">Admin</div></div>
+  </header>
+
+  <div style="padding:16px 28px 0">
+    <div class="panel">
+      <div class="panel-header"><h2>Barcha yangiliklar</h2><span class="panel-sub" id="news-count"></span></div>
+      <div id="news-list"><div style="padding:24px;text-align:center;color:var(--text-muted)">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+</main>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+const CAT = {
+  danger: { label:'Muhim',    cls:'cat-danger', badge:'background:var(--red-light);color:var(--red-text)' },
+  info:   { label:'Yangilik', cls:'cat-info',   badge:'background:var(--blue-light);color:var(--blue-text)' },
+  warn:   { label:"E'lon",    cls:'cat-warn',   badge:'background:var(--amber-light);color:var(--amber-text)' },
+  ok:     { label:'Ijobiy',   cls:'cat-ok',     badge:'background:var(--green-light);color:var(--green-text)' },
+};
+async function loadNews() {
+  const news = await API.getNews();
+  document.getElementById('news-count').textContent = news.length + ' ta xabar';
+  document.getElementById('news-list').innerHTML = news.map(n => {
+    const c = CAT[n.cat] || CAT.info;
+    return '<div class="news-item">' +
+      '<div class="news-cat ' + c.cls + '"></div>' +
+      '<div class="news-body">' +
+      '<span class="news-badge" style="' + c.badge + '">' + c.label + '</span>' +
+      '<div class="news-title">' + n.title + '</div>' +
+      '<div class="news-meta">' + n.date + '</div>' +
+      (n.desc ? '<div style="margin-top:6px;font-size:12px;color:var(--text-secondary)">' + n.desc + '</div>' : '') +
+      '</div></div>';
+  }).join('');
+}
+loadNews();
+</script>
+</body>
+</html>

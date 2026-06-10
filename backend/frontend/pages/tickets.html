@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chipta — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    /* ── Premium Ticket Grid ── */
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .ticket-card {
+      position: relative;
+      border-radius: 20px;
+      padding: 26px 20px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(.4,0,.2,1);
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: linear-gradient(160deg, #161929 0%, #0f1020 100%);
+    }
+
+    /* Glow orb behind each card */
+    .ticket-card::before {
+      content: '';
+      position: absolute;
+      top: -30px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      opacity: 0.18;
+      transition: opacity 0.3s, transform 0.4s;
+      filter: blur(28px);
+    }
+    .ticket-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      transition: border-color 0.25s;
+      pointer-events: none;
+    }
+
+    /* Per-card accent colors */
+    .ticket-card:nth-child(1)::before { background: #8b5cf6; }
+    .ticket-card:nth-child(2)::before { background: #06b6d4; }
+    .ticket-card:nth-child(3)::before { background: #10b981; }
+    .ticket-card:nth-child(4)::before { background: #f59e0b; }
+    .ticket-card:nth-child(5)::before { background: #f43f5e; }
+    .ticket-card:nth-child(6)::before { background: #8b5cf6; }
+
+    .ticket-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.14); }
+    .ticket-card:hover::before { opacity: 0.32; transform: translateX(-50%) scale(1.3); }
+    .ticket-card:nth-child(1):hover::after { border-color: rgba(139,92,246,0.4); box-shadow: 0 0 0 1px rgba(139,92,246,0.15); }
+    .ticket-card:nth-child(2):hover::after { border-color: rgba(6,182,212,0.4); box-shadow: 0 0 0 1px rgba(6,182,212,0.15); }
+    .ticket-card:nth-child(3):hover::after { border-color: rgba(16,185,129,0.4); box-shadow: 0 0 0 1px rgba(16,185,129,0.15); }
+    .ticket-card:nth-child(4):hover::after { border-color: rgba(245,158,11,0.4); box-shadow: 0 0 0 1px rgba(245,158,11,0.15); }
+    .ticket-card:nth-child(5):hover::after { border-color: rgba(244,63,94,0.4); box-shadow: 0 0 0 1px rgba(244,63,94,0.15); }
+    .ticket-card:nth-child(6):hover::after { border-color: rgba(139,92,246,0.4); box-shadow: 0 0 0 1px rgba(139,92,246,0.15); }
+
+    /* Popular badge */
+    .t-popular {
+      position: absolute;
+      top: 14px; right: 14px;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 9px;
+      border-radius: 99px;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(139,92,246,0.4);
+    }
+
+    /* Icon wrap */
+    .t-icon-wrap {
+      position: relative;
+      width: 60px; height: 60px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      z-index: 1;
+    }
+    .ticket-card:nth-child(1) .t-icon-wrap { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25); }
+    .ticket-card:nth-child(2) .t-icon-wrap { background: rgba(6,182,212,0.15);   border: 1px solid rgba(6,182,212,0.25); }
+    .ticket-card:nth-child(3) .t-icon-wrap { background: rgba(16,185,129,0.15);  border: 1px solid rgba(16,185,129,0.25); }
+    .ticket-card:nth-child(4) .t-icon-wrap { background: rgba(245,158,11,0.15);  border: 1px solid rgba(245,158,11,0.25); }
+    .ticket-card:nth-child(5) .t-icon-wrap { background: rgba(244,63,94,0.15);   border: 1px solid rgba(244,63,94,0.25); }
+    .ticket-card:nth-child(6) .t-icon-wrap { background: rgba(139,92,246,0.15);  border: 1px solid rgba(139,92,246,0.25); }
+
+    .t-icon { font-size: 26px; position: relative; z-index: 1; }
+
+    .t-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #eef0ff;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+      position: relative; z-index: 1;
+    }
+
+    .t-price {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      margin-bottom: 4px;
+      position: relative; z-index: 1;
+    }
+    .ticket-card:nth-child(1) .t-price { color: #c4b5fd; }
+    .ticket-card:nth-child(2) .t-price { color: #67e8f9; }
+    .ticket-card:nth-child(3) .t-price { color: #6ee7b7; }
+    .ticket-card:nth-child(4) .t-price { color: #fcd34d; }
+    .ticket-card:nth-child(5) .t-price { color: #fda4af; }
+    .ticket-card:nth-child(6) .t-price { color: #c4b5fd; }
+
+    .t-unit {
+      font-size: 10.5px;
+      color: #3a3d58;
+      margin-bottom: 6px;
+      position: relative; z-index: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .t-desc {
+      font-size: 11.5px;
+      color: #4a4d70;
+      margin-bottom: 18px;
+      position: relative; z-index: 1;
+    }
+
+    .t-buy {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative; z-index: 1;
+      letter-spacing: -0.01em;
+    }
+    .ticket-card:nth-child(1) .t-buy { background: linear-gradient(135deg,#8b5cf6,#6d28d9); box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+    .ticket-card:nth-child(2) .t-buy { background: linear-gradient(135deg,#06b6d4,#0e7490); box-shadow: 0 4px 14px rgba(6,182,212,0.3); }
+    .ticket-card:nth-child(3) .t-buy { background: linear-gradient(135deg,#10b981,#047857); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+    .ticket-card:nth-child(4) .t-buy { background: linear-gradient(135deg,#f59e0b,#b45309); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+    .ticket-card:nth-child(5) .t-buy { background: linear-gradient(135deg,#f43f5e,#be123c); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
+    .ticket-card:nth-child(6) .t-buy { background: linear-gradient(135deg,#8b5cf6,#6d28d9); box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+    .t-buy:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      animation: fadeIn .2s ease;
+    }
+    .modal-foot .btn-primary { width:auto; padding:10px 20px; }
+
+    @media (max-width: 640px) {
+      .ticket-grid { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">🚌</div>
+    <div>
+      <div class="sidebar-logo-text">TransportInfo</div>
+      <div class="sidebar-logo-sub">Boshqaruv tizimi</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Asosiy</div>
+    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <div class="nav-section-label">Xizmatlar</div>
+    <a href="/pages/tickets.html"  class="nav-link active" data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status"></div>
+    <div class="sidebar-user">
+      <div class="su-info">
+        <div class="su-avatar" id="su-avatar">YY</div>
+        <div id="sidebar-user-info"></div>
+      </div>
+      <button class="btn-logout" onclick="authLogout()">→</button>
+    </div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+
+<!-- Purchase modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Chipta sotib olish</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <span class="modal-label">Chipta turi</span>
+        <span class="modal-val" id="modal-type">—</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-label">Narx (1 ta)</span>
+        <span class="modal-val" id="modal-unit-price">—</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-label">Toifa</span>
+        <select id="modal-category" class="form-control" style="width:auto;padding:6px 12px;font-size:13px" onchange="recalc()">
+          <option value="Oddiy">Oddiy</option>
+          <option value="Talaba">Talaba (−30%)</option>
+          <option value="Pensioner">Pensioner (−50%)</option>
+          <option value="Nogironlar">Nogironlar (bepul)</option>
+          <option value="Harbiy">Harbiy (−40%)</option>
+        </select>
+      </div>
+      <div class="modal-row">
+        <span class="modal-label">Soni</span>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <span class="qty-val" id="modal-qty">1</span>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+      </div>
+      <div class="modal-total">
+        <span class="modal-total-label">Jami to'lov</span>
+        <span class="modal-total-price" id="modal-total">0 so'm</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-outline" onclick="closeModal()">Bekor qilish</button>
+      <button class="btn-primary" onclick="confirmPurchase()">✓ To'lash va olish</button>
+    </div>
+  </div>
+</div>
+
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Chipta va Tariflar</h1><p>Narxlar va imtiyozli toifalar</p></div>
+    <div class="header-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
+      <div class="user-badge" id="user-badge">
+        <div class="ub-avatar">YY</div>
+        <span class="ub-name">Yulduz</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="padding:16px 28px 0">
+    <div class="panel">
+      <div class="panel-header"><h2>Chipta turlari</h2><span class="panel-sub">2026-yil tariflar</span></div>
+      <div class="ticket-grid" id="ticket-grid">
+        <div style="padding:24px;text-align:center;color:var(--text-muted);grid-column:1/-1">Yuklanmoqda...</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header"><h2>Imtiyozli toifalar</h2></div>
+      <div class="route-list">
+        <div class="route-item">
+          <div style="width:40px;height:40px;background:var(--success-dim);border:1px solid var(--success-border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">👴</div>
+          <div class="route-info"><div class="route-name">Pensionerlar</div><div class="route-meta">50% chegirma · Pensiya guvohnomasi</div></div>
+          <span class="badge badge-ok">50%</span>
+        </div>
+        <div class="route-item">
+          <div style="width:40px;height:40px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">♿</div>
+          <div class="route-info"><div class="route-name">Nogironlar (I–II guruh)</div><div class="route-meta">Bepul yurish · Tegishli hujjat bilan</div></div>
+          <span class="badge badge-info">Bepul</span>
+        </div>
+        <div class="route-item">
+          <div style="width:40px;height:40px;background:var(--warning-dim);border:1px solid var(--warning-border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
+          <div class="route-info"><div class="route-name">Talabalar</div><div class="route-meta">30% chegirma · Talaba guvohnomasi bilan</div></div>
+          <span class="badge badge-delay">30%</span>
+        </div>
+        <div class="route-item">
+          <div style="width:40px;height:40px;background:var(--danger-dim);border:1px solid var(--danger-border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🪖</div>
+          <div class="route-info"><div class="route-name">Harbiy xizmatchilar</div><div class="route-meta">40% chegirma · Harbiy guvohnoma bilan</div></div>
+          <span class="badge badge-stop">40%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;margin-bottom:28px">
+      <div class="panel-header">
+        <h2>So'nggi xaridlar</h2>
+        <button class="btn-outline btn-sm" onclick="loadPurchases()">⟳ Yangilash</button>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Kod</th><th>Chipta</th><th>Toifa</th><th>Soni</th><th>Jami</th><th>Sana</th></tr></thead>
+          <tbody id="purchases-tbody"><tr><td colspan="6" class="purchase-empty">Yuklanmoqda...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let allTickets = [];
+let activeTicket = null;
+let qty = 1;
+const DISCOUNTS = { Oddiy:0, Talaba:0.30, Pensioner:0.50, Nogironlar:1.0, Harbiy:0.40 };
+
+async function init() {
+  allTickets = await API.getTickets();
+  const popularId = allTickets.find(t => t.name && t.name.toLowerCase().includes('oylik'))?.id;
+  document.getElementById('ticket-grid').innerHTML = allTickets.map(t =>
+    '<div class="ticket-card">' +
+    (t.id === popularId ? '<div class="t-popular">⭐ Popular</div>' : '') +
+    '<div class="t-icon-wrap"><span class="t-icon">' + t.icon + '</span></div>' +
+    '<div class="t-name">' + t.name + '</div>' +
+    '<div class="t-price">' + t.priceStr + '</div>' +
+    (t.unit ? '<div class="t-unit">' + t.unit + '</div>' : '') +
+    '<div class="t-desc">' + t.desc + '</div>' +
+    '<button class="t-buy" onclick="openModal(' + t.id + ')">' + (t.price > 0 ? 'Sotib olish' : 'Ariza berish') + '</button>' +
+    '</div>'
+  ).join('');
+  loadPurchases();
+}
+
+function openModal(id) {
+  activeTicket = allTickets.find(t => t.id === id);
+  qty = 1;
+  document.getElementById('modal-qty').textContent = 1;
+  document.getElementById('modal-type').textContent = activeTicket.icon + ' ' + activeTicket.name;
+  document.getElementById('modal-unit-price').textContent = activeTicket.price > 0 ? activeTicket.priceStr + ' so\'m' : 'Bepul';
+  document.getElementById('modal-category').value = 'Oddiy';
+  recalc();
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function changeQty(delta) {
+  qty = Math.max(1, Math.min(10, qty + delta));
+  document.getElementById('modal-qty').textContent = qty;
+  recalc();
+}
+function recalc() {
+  if (!activeTicket) return;
+  const discount = DISCOUNTS[document.getElementById('modal-category').value] || 0;
+  const total = Math.round(activeTicket.price * (1 - discount) * qty);
+  document.getElementById('modal-total').textContent = total === 0 ? 'Bepul' : total.toLocaleString('uz-UZ') + ' so\'m';
+}
+
+async function confirmPurchase() {
+  if (!activeTicket) return;
+  const category = document.getElementById('modal-category').value;
+  const btn = document.querySelector('.modal-foot .btn-primary');
+  btn.disabled = true; btn.textContent = 'Yuklanmoqda...';
+  const result = await API.purchaseTicket(activeTicket.id, qty, category);
+  btn.disabled = false; btn.textContent = '✓ To\'lash va olish';
+  if (result && result.success) {
+    closeModal();
+    showToast('✓ Chipta olindi! Kod: ' + result.data.code, 'ok');
+    loadPurchases();
+  } else { showToast('Xatolik yuz berdi. Qayta urinib ko\'ring.', 'err'); }
+}
+
+async function loadPurchases() {
+  const purchases = await API.getPurchases();
+  const tbody = document.getElementById('purchases-tbody');
+  tbody.innerHTML = purchases.length === 0
+    ? '<tr><td colspan="6" class="purchase-empty">Hali xarid amalga oshirilmagan</td></tr>'
+    : purchases.map(p =>
+        '<tr>' +
+        '<td style="font-family:var(--font-mono);font-size:12px;color:var(--success-text)">' + p.code + '</td>' +
+        '<td>' + p.ticketIcon + ' ' + p.ticketName + '</td>' +
+        '<td style="color:var(--text-secondary)">' + p.category + '</td>' +
+        '<td>' + p.qty + ' ta</td>' +
+        '<td style="font-weight:700">' + (p.total===0?'Bepul':p.total.toLocaleString('uz-UZ')+' so\'m') + '</td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + p.date + '</td>' +
+        '</tr>'
+      ).join('');
+}
+
+document.getElementById('modal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Marshrutlar — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html"   class="nav-link active" data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status"></div>
+    <div class="sidebar-user">
+      <div id="sidebar-user-info"></div>
+      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
+    </div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Marshrutlar</h1><p>Barcha faol transport yo'nalishlari</p></div>
+    <div class="header-actions">
+      <button class="btn-outline" onclick="refreshData()">⟳ Yangilash</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
+      <div class="user-badge" id="user-badge">Admin</div>
+    </div>
+  </header>
+
+  <div class="filter-bar" id="filter-bar">
+    <button class="chip active" onclick="filterRoutes('all',this)">Barchasi</button>
+    <button class="chip" onclick="filterRoutes('bus',this)">🚌 Avtobus</button>
+    <button class="chip" onclick="filterRoutes('metro',this)">🚇 Metro</button>
+    <button class="chip" onclick="filterRoutes('tram',this)">🚋 Tram</button>
+    <button class="chip" onclick="filterRoutes('active',this)">✓ Faol</button>
+    <button class="chip" onclick="filterRoutes('delay',this)">⏱ Kechikmoqda</button>
+    <button class="chip" onclick="filterRoutes('stopped',this)">⛔ To'xtatilgan</button>
+  </div>
+
+  <div class="panel-full">
+    <div class="panel-header">
+      <h2>Marshrutlar ro'yxati</h2>
+      <span class="panel-sub" id="count-label">Yuklanmoqda...</span>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Raqam</th><th>Tur</th><th>Yo'nalish</th><th>Bekatlar</th><th>Masofa</th><th>Ish vaqti</th><th>Holat</th><th>Jadval</th></tr></thead>
+        <tbody id="routes-tbody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Yuklanmoqda...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let allRoutes = [];
+
+async function loadRoutes() {
+  allRoutes = await API.getRoutes();
+  const urlFilter = new URLSearchParams(location.search).get('filter');
+  if (urlFilter) {
+    const chip = [...document.querySelectorAll('#filter-bar .chip')]
+      .find(c => c.getAttribute('onclick') && c.getAttribute('onclick').includes("'" + urlFilter + "'"));
+    if (chip) {
+      document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderTable(allRoutes.filter(r => r.type === urlFilter || r.status === urlFilter));
+    } else renderTable(allRoutes);
+  } else renderTable(allRoutes);
+}
+
+function renderTable(routes) {
+  document.getElementById('count-label').textContent = routes.length + ' ta marshrut';
+  document.getElementById('routes-tbody').innerHTML = routes.length === 0
+    ? '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">Marshrut topilmadi</div></div></td></tr>'
+    : routes.map(r =>
+      '<tr style="cursor:pointer" onclick="location.href=\'/pages/schedule.html?id=' + r.id + '\'" title="Jadval ko\'rish">' +
+      '<td><span class="route-num ' + typeClass(r.type) + '" style="display:inline-flex">' + r.number + '</span></td>' +
+      '<td style="color:var(--text-secondary)">' + typeEmoji(r.type) + ' ' + typeLabel(r.type) + '</td>' +
+      '<td style="font-weight:500">' + r.name + '</td>' +
+      '<td style="color:var(--text-secondary)">' + r.stops + ' ta</td>' +
+      '<td style="color:var(--text-secondary)">' + r.km + ' km</td>' +
+      '<td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + r.hours + '</td>' +
+      '<td>' + statusBadge(r.status) + '</td>' +
+      '<td><span style="color:var(--green-text);font-size:12px;font-weight:500">Jadval →</span></td>' +
+      '</tr>'
+    ).join('');
+}
+
+function filterRoutes(key, btn) {
+  document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable(key === 'all' ? allRoutes : allRoutes.filter(r => r.type === key || r.status === key));
+}
+
+function refreshData() { loadRoutes(); }
+loadRoutes();
+</script>
+</body>
+</html>

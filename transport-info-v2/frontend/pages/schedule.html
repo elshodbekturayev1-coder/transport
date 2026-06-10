@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Jadval — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html" class="nav-link"><span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link active"><span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html" class="nav-link"><span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html" class="nav-link"><span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html" class="nav-link"><span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html" class="nav-link admin-link"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status" style="font-size:11px;margin-bottom:6px"></div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Jadval</h1><p>Marshrut bekat-vaqt jadvali</p></div>
+    <div class="header-actions"><div class="user-badge">Admin</div></div>
+  </header>
+
+  <div style="padding:16px 28px 0">
+    <div class="panel" style="max-width:560px">
+      <div class="panel-header"><h2>Marshrut tanlash</h2></div>
+      <div style="padding:16px;display:flex;gap:10px">
+        <select id="route-select" class="form-control" style="flex:1" onchange="loadSchedule()">
+          <option value="1">42 — Chilonzor — Yunusobod</option>
+          <option value="2">17 — Sergeli — Markaziy bozor</option>
+          <option value="3">88 — Mirobod — Olmazor</option>
+          <option value="4">M1 — Metro Chilonzor</option>
+          <option value="5">M2 — Metro O'zbekiston</option>
+          <option value="7">55 — Yangiyo'l — Shahar markazi</option>
+        </select>
+        <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="loadSchedule()">Ko'rish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-full">
+    <div class="panel-header">
+      <h2 id="sched-title">Jadval</h2>
+      <span class="panel-sub"><span class="pulse-dot"></span> Jonli yangilanish</span>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Vaqt</th><th>Bekat</th><th>Holat</th></tr></thead>
+        <tbody id="sched-body"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">Yuklanmoqda...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+// URL dan ?id= ni olish
+const urlId = new URLSearchParams(location.search).get('id');
+if (urlId) {
+  const sel = document.getElementById('route-select');
+  if (sel) sel.value = urlId;
+}
+
+async function loadSchedule() {
+  const id = document.getElementById('route-select').value;
+  document.getElementById('sched-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Yuklanmoqda...</td></tr>';
+  const data = await API.getSchedule(id);
+  if (!data) {
+    document.getElementById('sched-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red-text)">Jadval topilmadi</td></tr>';
+    return;
+  }
+  document.getElementById('sched-title').textContent = data.route;
+  document.getElementById('sched-body').innerHTML = data.timetable.map((row, i) =>
+    '<tr>' +
+    '<td style="color:var(--text-muted)">' + (i+1) + '</td>' +
+    '<td style="font-family:monospace;font-weight:600;color:var(--text-primary)">' + row.time + '</td>' +
+    '<td>' + row.stop + '</td>' +
+    '<td>' + statusBadge(row.status) + '</td>' +
+    '</tr>'
+  ).join('');
+}
+loadSchedule();
+</script>
+</body>
+</html>

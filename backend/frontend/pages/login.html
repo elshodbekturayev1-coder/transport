@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Kirish — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body style="display:block;background:var(--bg-base)">
+
+<div class="login-theme">
+  <button class="theme-toggle" onclick="toggleTheme()" title="Tema almashtirish">
+    <span class="theme-icon">☀️</span>
+  </button>
+</div>
+
+<div class="login-page" style="width:100vw;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="logo-mark">🚌</div>
+      <div>
+        <div class="login-logo-text">TransportInfo</div>
+        <div class="login-logo-sub">Transport boshqaruv tizimi</div>
+      </div>
+    </div>
+
+    <h1 class="login-title">Tizimga kirish</h1>
+    <p class="login-subtitle">Hisobingizga kiring davom etish uchun</p>
+
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <div class="login-field">
+        <label>Foydalanuvchi nomi</label>
+        <input type="text" id="login-username" placeholder="foydalanuvchi_nomi" autocomplete="username" required/>
+      </div>
+      <div class="login-field">
+        <label>Parol</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required/>
+      </div>
+
+      <div class="login-error hidden" id="login-error">
+        ✕ Noto'g'ri foydalanuvchi nomi yoki parol
+      </div>
+
+      <button type="submit" class="login-btn" id="login-btn">
+        Kirish →
+      </button>
+    </form>
+
+    <div class="demo-accounts">
+      <div class="demo-title">Demo hisoblar (bosing)</div>
+      <div class="demo-list">
+        <div class="demo-item" onclick="fillDemo('superadmin','admin123')">
+          <div>
+            <div class="demo-item-user">superadmin</div>
+            <div class="demo-item-pass">admin123</div>
+          </div>
+          <span class="demo-item-role role-super_admin">Super Admin</span>
+        </div>
+        <div class="demo-item" onclick="fillDemo('manager','manager123')">
+          <div>
+            <div class="demo-item-user">manager</div>
+            <div class="demo-item-pass">manager123</div>
+          </div>
+          <span class="demo-item-role role-transport_manager">Transport Manager</span>
+        </div>
+        <div class="demo-item" onclick="fillDemo('operator','operator123')">
+          <div>
+            <div class="demo-item-user">operator</div>
+            <div class="demo-item-pass">operator123</div>
+          </div>
+          <span class="demo-item-role role-operator">Operator</span>
+        </div>
+        <div class="demo-item" onclick="fillDemo('viewer','viewer123')">
+          <div>
+            <div class="demo-item-user">viewer</div>
+            <div class="demo-item-pass">viewer123</div>
+          </div>
+          <span class="demo-item-role role-viewer">Viewer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  // Redirect if already logged in
+  (function() {
+    const u = getCurrentUser();
+    if (u) location.href = '/index.html';
+  })();
+
+  function fillDemo(username, password) {
+    document.getElementById('login-username').value = username;
+    document.getElementById('login-password').value = password;
+    document.getElementById('login-error').classList.add('hidden');
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn      = document.getElementById('login-btn');
+    const errEl    = document.getElementById('login-error');
+
+    btn.disabled = true;
+    btn.textContent = 'Tekshirilmoqda...';
+    errEl.classList.add('hidden');
+
+    // Small delay for UX
+    setTimeout(() => {
+      const ok = authLogin(username, password);
+      if (ok) {
+        btn.textContent = 'Muvaffaqiyatli ✓';
+        setTimeout(() => { location.href = '/index.html'; }, 400);
+      } else {
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Kirish →';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').focus();
+      }
+    }, 400);
+  }
+</script>
+</body>
+</html>

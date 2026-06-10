@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chipta — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html" class="nav-link"><span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"><span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html" class="nav-link"><span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html" class="nav-link active"><span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html" class="nav-link"><span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html" class="nav-link admin-link"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status" style="font-size:11px;margin-bottom:6px"></div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Chipta va Tariflar</h1><p>Narxlar va imtiyozli toifalar</p></div>
+    <div class="header-actions"><div class="user-badge">Admin</div></div>
+  </header>
+  <div style="padding:16px 28px 0">
+    <div class="panel">
+      <div class="panel-header"><h2>Chipta turlari</h2><span class="panel-sub">2026-yil tariflar</span></div>
+      <div class="ticket-grid" id="ticket-grid"><div style="padding:24px;text-align:center;color:var(--text-muted)">Yuklanmoqda...</div></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header"><h2>Imtiyozli toifalar</h2></div>
+      <div class="route-list">
+        <div class="route-item">
+          <div style="width:38px;height:38px;background:var(--green-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">👴</div>
+          <div class="route-info"><div class="route-name">Pensionerlar</div><div class="route-meta">50% chegirma · Pensiya guvohnomasi</div></div>
+          <span class="badge badge-ok">50%</span>
+        </div>
+        <div class="route-item">
+          <div style="width:38px;height:38px;background:var(--blue-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">♿</div>
+          <div class="route-info"><div class="route-name">Nogironlar (I–II guruh)</div><div class="route-meta">Bepul yurish · Tegishli hujjat bilan</div></div>
+          <span class="badge badge-ok">Bepul</span>
+        </div>
+        <div class="route-item">
+          <div style="width:38px;height:38px;background:var(--amber-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
+          <div class="route-info"><div class="route-name">Talabalar</div><div class="route-meta">30% chegirma · Talaba guvohnomasi bilan</div></div>
+          <span class="badge badge-delay">30%</span>
+        </div>
+        <div class="route-item">
+          <div style="width:38px;height:38px;background:var(--red-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🪖</div>
+          <div class="route-info"><div class="route-name">Harbiy xizmatchilar</div><div class="route-meta">40% chegirma · Harbiy guvohnoma bilan</div></div>
+          <span class="badge badge-stop">40%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+(async function() {
+  const tickets = await API.getTickets();
+  document.getElementById('ticket-grid').innerHTML = tickets.map(t =>
+    '<div class="ticket-card">' +
+    '<div class="t-icon">' + t.icon + '</div>' +
+    '<div class="t-name">' + t.name + '</div>' +
+    '<div class="t-price">' + t.priceStr + ' ' + t.unit + '</div>' +
+    '<div class="t-desc">' + t.desc + '</div>' +
+    '</div>'
+  ).join('');
+})();
+</script>
+</body>
+</html>

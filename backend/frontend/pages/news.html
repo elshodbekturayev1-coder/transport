@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Yangiliklar — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .news-item { position: relative; }
+    .news-actions {
+      position: absolute; top: 12px; right: 12px;
+      display: flex; gap: 6px; opacity: 0; transition: opacity .15s;
+    }
+    .news-item:hover .news-actions { opacity: 1; }
+    .news-act-btn {
+      padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+      cursor: pointer; border: 1px solid; line-height: 1.4; font-family: var(--font-body);
+    }
+    .news-edit-btn { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
+    .news-edit-btn:hover { border-color: var(--green); color: var(--green-text); }
+    .news-del-btn  { background: var(--red-dim); border-color: var(--red); color: var(--red-text); }
+    .news-del-btn:hover { opacity: .8; }
+
+    /* News item layout */
+    .news-item {
+      display: flex; gap: 14px; padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background var(--tr);
+    }
+    .news-item:last-child { border-bottom: none; }
+    .news-item:hover { background: var(--bg-hover); }
+    .news-cat { width: 4px; border-radius: 2px; flex-shrink: 0; min-height: 40px; }
+    .cat-danger .news-cat { background: var(--red); }
+    .cat-info   .news-cat { background: var(--blue); }
+    .cat-warn   .news-cat { background: var(--amber); }
+    .cat-ok     .news-cat { background: var(--green); }
+    .news-body  { flex: 1; min-width: 0; }
+    .news-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: var(--radius-full);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+    }
+    .cat-danger .news-badge { background: var(--red-dim);   color: var(--red-text); }
+    .cat-info   .news-badge { background: var(--blue-dim);  color: var(--blue-text); }
+    .cat-warn   .news-badge { background: var(--amber-dim); color: var(--amber-text); }
+    .cat-ok     .news-badge { background: var(--green-dim); color: var(--green-text); }
+    .news-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .news-meta  { font-size: 11px; color: var(--text-muted); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      animation: fadeIn .2s ease;
+    }
+    .modal-box {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); width: 100%; max-width: 440px;
+      box-shadow: var(--shadow-lg); animation: fadeInUp .25s ease;
+    }
+    .modal-head {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 18px; cursor: pointer; padding: 2px 6px;
+      border-radius: var(--radius-sm); transition: all var(--tr);
+    }
+    .modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-foot {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    .modal-foot .btn-primary { width: auto; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html"     class="nav-link active" data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status"></div>
+    <div class="sidebar-user">
+      <div id="sidebar-user-info"></div>
+      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
+    </div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+
+<!-- Edit modal -->
+<div class="modal-overlay hidden" id="edit-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Yangilikni tahrirlash</h3>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin:0">
+        <label>Kategoriya</label>
+        <select class="form-control" id="edit-cat">
+          <option value="info">🔵 Yangilik</option>
+          <option value="danger">🔴 Muhim</option>
+          <option value="warn">🟡 E'lon</option>
+          <option value="ok">🟢 Ijobiy</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Sarlavha *</label>
+        <input class="form-control" id="edit-title" placeholder="Yangilik sarlavhasi"/>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Tavsif</label>
+        <textarea class="form-control" id="edit-desc" rows="3" placeholder="Qo'shimcha ma'lumot" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-outline" onclick="closeEditModal()">Bekor qilish</button>
+      <button class="btn-primary" onclick="saveEdit()">✓ Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Yangiliklar</h1><p>E'lonlar va tizim xabarlari</p></div>
+    <div class="header-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
+      <div class="user-badge" id="user-badge">Admin</div>
+    </div>
+  </header>
+
+  <div class="filter-bar" id="filter-bar">
+    <button class="chip active" onclick="filterNews('all',this)">Barchasi</button>
+    <button class="chip" onclick="filterNews('danger',this)">🔴 Muhim</button>
+    <button class="chip" onclick="filterNews('info',this)">🔵 Yangilik</button>
+    <button class="chip" onclick="filterNews('warn',this)">🟡 E'lon</button>
+    <button class="chip" onclick="filterNews('ok',this)">🟢 Ijobiy</button>
+  </div>
+
+  <div style="padding:0 28px 28px">
+    <div class="panel">
+      <div class="panel-header">
+        <h2 id="news-title">Barcha yangiliklar</h2>
+        <span class="panel-sub" id="news-count"></span>
+      </div>
+      <div id="news-list"><div style="padding:32px;text-align:center;color:var(--text-muted)">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+const CAT = {
+  danger:{ label:'Muhim',    cls:'cat-danger' },
+  info:  { label:'Yangilik', cls:'cat-info' },
+  warn:  { label:"E'lon",    cls:'cat-warn' },
+  ok:    { label:'Ijobiy',   cls:'cat-ok' },
+};
+
+let allNews = [];
+let editingId = null;
+let activeCat = 'all';
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderNews(items) {
+  document.getElementById('news-count').textContent = items.length + ' ta xabar';
+  if (items.length === 0) {
+    document.getElementById('news-list').innerHTML =
+      '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Xabar topilmadi</div></div>';
+    return;
+  }
+  document.getElementById('news-list').innerHTML = items.map(n => {
+    const c = CAT[n.cat] || CAT.info;
+    return '<div class="news-item ' + c.cls + '" id="ni-' + n.id + '">' +
+      '<div class="news-cat"></div>' +
+      '<div class="news-body">' +
+        '<span class="news-badge">' + c.label + '</span>' +
+        '<div class="news-title">' + escHtml(n.title) + '</div>' +
+        '<div class="news-meta">' + n.date + '</div>' +
+        (n.desc ? '<div style="margin-top:6px;font-size:12px;color:var(--text-secondary)">' + escHtml(n.desc) + '</div>' : '') +
+      '</div>' +
+      '<div class="news-actions" data-require="edit">' +
+        '<button class="news-act-btn news-edit-btn" onclick="openEdit(' + n.id + ')">✎ Tahrirlash</button>' +
+        '<button class="news-act-btn news-del-btn" data-require="delete" onclick="deleteNews(' + n.id + ')">✕ O\'chirish</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function filterNews(cat, btn) {
+  activeCat = cat;
+  document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const titles = { all:'Barcha yangiliklar', danger:'Muhim xabarlar', info:'Yangiliklar', warn:"E'lonlar", ok:'Ijobiy xabarlar' };
+  document.getElementById('news-title').textContent = titles[cat] || 'Yangiliklar';
+  renderNews(cat === 'all' ? allNews : allNews.filter(n => n.cat === cat));
+}
+
+function openEdit(id) {
+  const n = allNews.find(x => x.id === id);
+  if (!n) return;
+  editingId = id;
+  document.getElementById('edit-cat').value   = n.cat;
+  document.getElementById('edit-title').value = n.title;
+  document.getElementById('edit-desc').value  = n.desc || '';
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+function closeEditModal() { editingId=null; document.getElementById('edit-modal').classList.add('hidden'); }
+
+async function saveEdit() {
+  const title = document.getElementById('edit-title').value.trim();
+  if (!title) { showToast('Sarlavhani kiriting', 'warn'); return; }
+  const data = { cat: document.getElementById('edit-cat').value, title, desc: document.getElementById('edit-desc').value.trim() };
+  const res = await API.updateNews(editingId, data);
+  if (res && res.success) {
+    const idx = allNews.findIndex(x => x.id === editingId);
+    if (idx !== -1) Object.assign(allNews[idx], data);
+    closeEditModal();
+    showToast('Yangilik yangilandi', 'ok');
+    filterNews(activeCat, document.querySelector('#filter-bar .chip.active'));
+  } else { showToast('Xatolik yuz berdi', 'err'); }
+}
+
+async function deleteNews(id) {
+  const n = allNews.find(x => x.id === id);
+  if (!confirm('"' + (n ? n.title : '') + '" xabarini o\'chirishni tasdiqlaysizmi?')) return;
+  const res = await API.deleteNews(id);
+  if (res && res.success) {
+    allNews = allNews.filter(x => x.id !== id);
+    showToast("Xabar o'chirildi", 'ok');
+    filterNews(activeCat, document.querySelector('#filter-bar .chip.active'));
+  } else { showToast("O'chirishda xatolik", 'err'); }
+}
+
+document.getElementById('edit-modal').addEventListener('click', function(e) { if (e.target===this) closeEditModal(); });
+
+async function loadNews() {
+  allNews = await API.getNews();
+  renderNews(allNews);
+}
+loadNews();
+</script>
+</body>
+</html>

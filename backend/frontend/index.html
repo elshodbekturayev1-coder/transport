@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>TransportInfo — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">🚌</div>
+    <div>
+      <div class="sidebar-logo-text">TransportInfo</div>
+      <div class="sidebar-logo-sub">Boshqaruv tizimi</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Asosiy</div>
+    <a href="/index.html"          class="nav-link active" data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <div class="nav-section-label">Xizmatlar</div>
+    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status"></div>
+    <div class="sidebar-user">
+      <div class="su-info">
+        <div class="su-avatar" id="su-avatar">YY</div>
+        <div id="sidebar-user-info"></div>
+      </div>
+      <button class="btn-logout" onclick="authLogout()">→</button>
+    </div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title">
+      <h1>Dashboard</h1>
+      <p>Bugun, <span id="today-date"></span></p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline" id="refresh-btn" onclick="refreshData()">⟳ Yangilash</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema almashtirish"><span class="theme-icon">☀️</span></button>
+      <div class="user-badge" id="user-badge">
+        <div class="ub-avatar">YY</div>
+        <span class="ub-name">Yulduz</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <div class="stat-card accent-green" onclick="location.href='/pages/routes.html?filter=active'">
+      <div class="stat-top">
+        <div class="stat-icon-wrap"><span class="stat-icon">🚌</span></div>
+        <span class="stat-trend up">Faol</span>
+      </div>
+      <div class="stat-value" data-count="activeRoutes">—</div>
+      <div class="stat-label">Faol marshrutlar</div>
+    </div>
+    <div class="stat-card accent-amber" onclick="location.href='/pages/routes.html?filter=delay'">
+      <div class="stat-top">
+        <div class="stat-icon-wrap"><span class="stat-icon">⏱</span></div>
+        <span class="stat-trend down">Muammo</span>
+      </div>
+      <div class="stat-value" data-count="delays">—</div>
+      <div class="stat-label">Kechikishlar</div>
+    </div>
+    <div class="stat-card accent-red" onclick="location.href='/pages/routes.html?filter=stopped'">
+      <div class="stat-top">
+        <div class="stat-icon-wrap"><span class="stat-icon">⛔</span></div>
+        <span class="stat-trend">Bugun</span>
+      </div>
+      <div class="stat-value" data-count="stopped">—</div>
+      <div class="stat-label">To'xtatilgan</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-top">
+        <div class="stat-icon-wrap"><span class="stat-icon">👤</span></div>
+        <span class="stat-trend up" id="passenger-trend">+0</span>
+      </div>
+      <div class="stat-value" data-count="passengers">—</div>
+      <div class="stat-label">Bugungi yo'lovchilar</div>
+    </div>
+  </section>
+
+  <section class="panels-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <h2><span class="pulse-dot"></span> Jonli holat</h2>
+        <span class="panel-sub">Real vaqt ma'lumotlari</span>
+      </div>
+      <div class="route-list" id="live-routes">
+        <div class="empty-state"><div class="empty-state-icon">🚌</div><div class="empty-state-title">Yuklanmoqda...</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><h2>Yo'nalish qidiruv</h2><span class="panel-sub">Qayerdan — qayerga</span></div>
+      <div class="search-form">
+        <div class="search-field">
+          <label>Qayerdan</label>
+          <div class="ac-wrap">
+            <input type="text" id="from" placeholder="Masalan: Chilonzor" autocomplete="off" oninput="acFilter('from')" onfocus="acFilter('from')" onkeydown="acKey(event,'from')" />
+            <div class="ac-dropdown hidden" id="ac-from"></div>
+          </div>
+        </div>
+        <div class="search-swap" onclick="swapFields()">⇅</div>
+        <div class="search-field">
+          <label>Qayerga</label>
+          <div class="ac-wrap">
+            <input type="text" id="to" placeholder="Masalan: Yunusobod" autocomplete="off" oninput="acFilter('to')" onfocus="acFilter('to')" onkeydown="acKey(event,'to')" />
+            <div class="ac-dropdown hidden" id="ac-to"></div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="findRoute()">Marshrut topish →</button>
+      </div>
+      <div id="search-result" class="search-result hidden"></div>
+    </div>
+  </section>
+
+  <section class="panels-grid">
+    <div class="panel">
+      <div class="panel-header"><h2>Yo'lovchilar grafigi</h2><span class="panel-sub">Soatlar bo'yicha bugun</span></div>
+      <div class="chart-container"><canvas id="passengerChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h2>Tizim ogohlantirishlari</h2><span class="panel-sub">So'nggi voqealar</span></div>
+      <div class="alerts-list" id="alerts-list"></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/dashboard.js"></script>
+<script>
+let acStations = [];
+let acFocusIdx = { from:-1, to:-1 };
+
+(async function loadStations() {
+  try {
+    const r = await fetch('/api/search/stations');
+    const j = await r.json();
+    if (j.success) acStations = j.data;
+  } catch (_) {}
+})();
+
+function acFilter(field) {
+  const input = document.getElementById(field);
+  const drop  = document.getElementById('ac-' + field);
+  const q     = input.value.trim().toLowerCase();
+  acFocusIdx[field] = -1;
+  const matches = q.length === 0
+    ? acStations.slice(0, 60)
+    : acStations.filter(s => s.toLowerCase().includes(q)).slice(0, 60);
+  if (matches.length === 0) {
+    drop.innerHTML = '<div class="ac-empty">Bekat topilmadi</div>';
+  } else {
+    drop.innerHTML = matches.map((s, i) => {
+      const hi = q ? s.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<em>$1</em>') : s;
+      return '<div class="ac-item" data-idx="' + i + '" onmousedown="acPick(\'' + field + '\',\'' + s.replace(/'/g,"\\'") + '\')">' + hi + '</div>';
+    }).join('');
+  }
+  drop.classList.remove('hidden');
+}
+
+function acPick(field, value) {
+  document.getElementById(field).value = value;
+  document.getElementById('ac-' + field).classList.add('hidden');
+}
+
+function acKey(e, field) {
+  const drop  = document.getElementById('ac-' + field);
+  const items = drop.querySelectorAll('.ac-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown')       { e.preventDefault(); acFocusIdx[field] = Math.min(acFocusIdx[field] + 1, items.length - 1); }
+  else if (e.key === 'ArrowUp')    { e.preventDefault(); acFocusIdx[field] = Math.max(acFocusIdx[field] - 1, 0); }
+  else if (e.key === 'Enter' && acFocusIdx[field] >= 0) { e.preventDefault(); acPick(field, items[acFocusIdx[field]].textContent); return; }
+  else if (e.key === 'Escape')     { drop.classList.add('hidden'); return; }
+  else { return; }
+  items.forEach((el, i) => el.classList.toggle('focused', i === acFocusIdx[field]));
+  items[acFocusIdx[field]]?.scrollIntoView({ block:'nearest' });
+}
+
+document.addEventListener('mousedown', function(e) {
+  ['from','to'].forEach(field => {
+    const wrap = document.getElementById(field)?.closest('.ac-wrap');
+    if (wrap && !wrap.contains(e.target))
+      document.getElementById('ac-' + field)?.classList.add('hidden');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Xarita — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .map-wrap { padding: 0 28px 28px; }
+
+    #map-container {
+      position: relative; width: 100%; height: 560px;
+      background: #0d1117; border-radius: 16px;
+      border: 1px solid var(--border); overflow: hidden;
+      cursor: grab; user-select: none;
+    }
+    #map-container:active { cursor: grabbing; }
+    #map-svg { display: block; width: 100%; height: 100%; }
+
+    .zoom-controls {
+      position: absolute; right: 14px; bottom: 14px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .zoom-btn {
+      width: 36px; height: 36px;
+      background: #1a2035; border: 1px solid #2a3550;
+      border-radius: 8px; color: #c8d0e0;
+      font-size: 18px; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .zoom-btn:hover { background: #22c77a; color: #fff; border-color: #22c77a; }
+
+    .map-legend {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(13,17,23,0.92);
+      border: 1px solid #2a3550; border-radius: 10px;
+      padding: 10px 14px; min-width: 160px;
+    }
+    .leg-row { display: flex; align-items: center; gap: 9px; margin: 4px 0; font-size: 11px; color: #8892a8; }
+    .leg-line { height: 4px; width: 24px; border-radius: 2px; flex-shrink: 0; }
+    .leg-ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; background: #0d1117; flex-shrink: 0; }
+
+    .tip {
+      position: fixed; z-index: 9999;
+      background: #1a2035; border: 1px solid #2a3550;
+      border-radius: 10px; padding: 8px 13px;
+      font-size: 12px; color: #e8eaf0; pointer-events: none;
+      display: none; box-shadow: 0 8px 30px rgba(0,0,0,.65);
+      max-width: 220px; line-height: 1.5;
+    }
+
+    .r-detail { margin-top: 14px; display: none; }
+    .r-detail-body { padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 20px; }
+    .r-field { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+    .r-label { color: var(--text-muted); font-size: 11px; }
+    .r-value { color: var(--text-primary); font-weight: 600; font-size: 13px; }
+
+    .info-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(230px,1fr)); gap: 12px; margin-top: 14px; }
+    .ic { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 13px 15px; cursor: pointer; transition: border-color .15s, transform .1s; }
+    .ic:hover { border-color: var(--border-light); transform: translateY(-1px); }
+    .ic.sel { border-color: #22c77a; }
+    .ic-title { font-weight: 700; font-size: 13px; margin-bottom: 7px; }
+    .ic-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+    .ic-row:last-child { border: none; }
+    .ic-row span:first-child { color: var(--text-secondary); }
+    .sec-head { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin: 16px 0 8px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html"      class="nav-link active" data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status"></div>
+    <div class="sidebar-user">
+      <div id="sidebar-user-info"></div>
+      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
+    </div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Xarita</h1><p>Transport tarmog'i sxemasi</p></div>
+    <div class="header-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
+      <div class="user-badge" id="user-badge">Admin</div>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <button class="chip active" data-l="metro" onclick="toggleL('metro',this)">🚇 Metro</button>
+    <button class="chip active" data-l="tram"  onclick="toggleL('tram',this)">🚋 Tram</button>
+    <button class="chip active" data-l="bus"   onclick="toggleL('bus',this)">🚌 Avtobus</button>
+    <button class="chip active" data-l="stops" onclick="toggleL('stops',this)">● Bekatlar</button>
+  </div>
+
+  <div class="map-wrap">
+    <div id="map-container">
+      <svg id="map-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow2" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g id="vp"><!-- drawn by JS --></g>
+      </svg>
+
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoom(1.25)" title="Kattalashtirish">+</button>
+        <button class="zoom-btn" onclick="zoom(0.8)"  title="Kichiklashtirish">−</button>
+        <button class="zoom-btn" onclick="resetView()" title="Tiklash" style="font-size:14px">⌂</button>
+      </div>
+
+      <div class="map-legend" id="map-legend">
+        <div style="font-size:11px;font-weight:700;color:#c8d0e0;margin-bottom:6px">Liniyalar</div>
+      </div>
+    </div>
+
+    <div class="r-detail panel" id="r-detail">
+      <div class="panel-header">
+        <h2 id="rd-title">Marshrut</h2>
+        <div style="display:flex;gap:10px;align-items:center">
+          <a id="rd-link" href="#" style="color:var(--green-text);font-size:13px;text-decoration:none;font-weight:500">Jadvalga o'tish →</a>
+          <button onclick="document.getElementById('r-detail').style.display='none'"
+            style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">×</button>
+        </div>
+      </div>
+      <div class="r-detail-body" id="rd-body"></div>
+    </div>
+
+    <div id="sec-metro" style="display:none"><div class="sec-head">Metro liniyalari</div><div class="info-cards" id="ic-metro"></div></div>
+    <div id="sec-tram"  style="display:none"><div class="sec-head">Tramvay liniyalari</div><div class="info-cards" id="ic-tram"></div></div>
+    <div id="sec-bus"   style="display:none"><div class="sec-head">Avtobus liniyalari</div><div class="info-cards" id="ic-bus"></div></div>
+  </div>
+</main>
+
+<div class="tip" id="tip"></div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+const METRO_LINES = [
+  { key:'m3', label:"Yunusobod liniyasi", color:'#22c55e', stroke:6,
+    stations:[
+      {n:"Turkiston",x:618,y:52},{n:"Yunusobod",x:618,y:108},{n:"Shahriston",x:618,y:164},
+      {n:"Bodomzor",x:618,y:218},{n:"Minor",x:618,y:265},{n:"G'afur G'ulom",x:618,y:298},
+      {n:"Abdulla Qodirii",x:618,y:328},{n:"Paxtakor",x:618,y:360},{n:"Mustaqillik M.",x:618,y:392},
+      {n:"Mingo'rik",x:688,y:425},{n:"Toshkent",x:728,y:454},{n:"Xonobod",x:728,y:515},
+      {n:"Quruvchilar",x:662,y:565},{n:"Turon",x:602,y:595},{n:"Qipchoq",x:542,y:625},
+    ]},
+  { key:'m2', label:"O'zbekiston liniyasi", color:'#3b82f6', stroke:6,
+    stations:[
+      {n:"Beruniy",x:108,y:200},{n:"Tinchlik",x:218,y:268},{n:"Chorsu",x:358,y:342},
+      {n:"Alisher Navoiy",x:488,y:366},{n:"Paxtakor",x:618,y:366},{n:"Mustaqillik Maidoni",x:698,y:352},
+      {n:"Amir Temur xiyoboni",x:758,y:336},{n:"Do'stlik",x:858,y:320},{n:"Mashinasozlar",x:948,y:308},
+    ]},
+  { key:'m1', label:"Chilonzor liniyasi", color:'#ef4444', stroke:6,
+    stations:[
+      {n:"Buyuk Ipak Yo'li",x:1038,y:150},{n:"Pushkin",x:962,y:204},{n:"Hamid Olimjon",x:888,y:258},
+      {n:"Amir Temur xiyoboni",x:822,y:300},{n:"Mustaqillik Maidoni",x:762,y:332},
+      {n:"Yunus Rajabiy",x:742,y:360},{n:"Kosmonavtlar",x:722,y:392},{n:"Oybek",x:710,y:422},
+      {n:"Toshkent",x:728,y:452},{n:"Mirzo Ulug'bek",x:628,y:452},{n:"Chilonzor",x:528,y:452},
+      {n:"Olmazor",x:458,y:503},{n:"Choshtepa",x:398,y:554},{n:"O'zgarish",x:356,y:594},
+      {n:"Sergeli",x:322,y:638},{n:"Yangihayot",x:305,y:690},{n:"Chinor",x:342,y:740},{n:"Qipchoq",x:382,y:775},
+    ]},
+  { key:'circle', label:"Aylanma liniya", color:'#eab308', stroke:6,
+    stations:[
+      {n:"Mashinasozlar",x:948,y:308},{n:"Yashnobod",x:1028,y:360},{n:"Tuzel",x:1085,y:432},
+      {n:"Olmos",x:1095,y:508},{n:"Rohat",x:1068,y:572},{n:"Yangiobod",x:1012,y:622},
+      {n:"Qo'yliq",x:938,y:656},{n:"Matonat",x:845,y:678},{n:"Tolariq",x:748,y:678},
+      {n:"Qiyot",x:668,y:672},{n:"Xonobod",x:728,y:515},
+    ]},
+];
+
+const INTERCHANGES = new Set(['618,360','618,392','698,352','762,332','728,454','728,515','948,308']);
+
+const NODES = {
+  "Chilonzor":[528,452],"Chilonzor metro":[528,452],"Buyuk ipak yo'li":[238,290],"Mirzo Ulug'bek":[628,452],
+  "Hamza":[358,290],"Oybek":[710,422],"Kosmonavtlar":[722,392],"Mustaqillik maydoni":[762,332],
+  "Amir Temur xiyoboni":[822,300],"Toshkent":[728,454],"Do'stlik":[858,320],"Tinchlik":[218,268],
+  "Chorsu":[358,342],"Eski shahar":[340,370],"Shayxontohur":[308,330],"Yunusobod":[618,108],
+  "Yunusobod metro":[618,108],"Yunusobod bozori":[668,215],"Sergeli":[322,638],"Sergeli 1":[308,648],
+  "Bektemir":[285,510],"Olmazor":[458,503],"Olmazor metro":[458,503],"Qo'yliq":[938,656],
+  "Zangiota":[60,440],"Uchtepa":[95,360],"G'alaba":[155,375],"Aeroport":[1120,215],
+  "Toshkent aeroporti":[1120,215],"Navruz maydoni":[415,325],"Novza":[362,400],"Karvonsaroy":[290,415],
+  "Qurilish":[225,440],"Mirobod":[430,370],"Xonobod":[728,515],"Quruvchilar":[662,565],
+  "Paxtakor":[618,360],"Alisher Navoiy":[488,366],"Mashinasozlar":[948,308],
+};
+function findCoord(name) {
+  if (!name) return null;
+  const n = name.trim();
+  if (NODES[n]) return NODES[n];
+  const s = n.replace(/\s+\d+(-mavze)?$/,'').trim();
+  if (NODES[s]) return NODES[s];
+  for (const [k,v] of Object.entries(NODES))
+    if (n.toLowerCase().startsWith(k.toLowerCase())||k.toLowerCase().startsWith(n.toLowerCase())) return v;
+  return null;
+}
+function routePts(route) {
+  const pts=[]; let last=null;
+  for (const s of (route.stopNames||[])) {
+    const c=findCoord(s);
+    if (c&&(!last||last[0]!==c[0]||last[1]!==c[1])){pts.push({n:s,x:c[0],y:c[1]});last=c;}
+  }
+  return pts;
+}
+
+const TRAM_COLORS=['#f59e0b','#fb923c','#f43f5e','#a78bfa','#67e8f9','#86efac','#fcd34d','#fda4af'];
+const BUS_COLORS=['#10b981','#6ee7b7','#34d399','#14b8a6','#22d3ee','#4ade80','#84cc16','#a3e635',
+  '#facc15','#fbbf24','#f97316','#fb7185','#c084fc','#818cf8','#60a5fa','#38bdf8','#2dd4bf','#4ade80','#a3e635','#d946ef'];
+const colorMap={};
+
+const W_COORD=1400,H_COORD=950;
+let sc=1,tx=0,ty=0,dragging=false,lx=0,ly=0;
+function applyT(){document.getElementById('vp').setAttribute('transform',`translate(${tx},${ty}) scale(${sc})`);}
+function zoom(factor,cx,cy){
+  const cont=document.getElementById('map-container');
+  if(cx===undefined){cx=cont.clientWidth/2;cy=cont.clientHeight/2;}
+  const nsc=Math.max(0.35,Math.min(5,sc*factor));
+  tx=cx-(cx-tx)*(nsc/sc);ty=cy-(cy-ty)*(nsc/sc);sc=nsc;applyT();
+}
+function resetView(){
+  const cont=document.getElementById('map-container');
+  sc=Math.min(cont.clientWidth/W_COORD,cont.clientHeight/H_COORD)*0.92;
+  tx=(cont.clientWidth-W_COORD*sc)/2;ty=(cont.clientHeight-H_COORD*sc)/2;applyT();
+}
+const cont=document.getElementById('map-container');
+cont.addEventListener('wheel',e=>{e.preventDefault();const r=cont.getBoundingClientRect();zoom(e.deltaY<0?1.12:0.89,e.clientX-r.left,e.clientY-r.top);},{passive:false});
+cont.addEventListener('mousedown',e=>{dragging=true;lx=e.clientX;ly=e.clientY;});
+document.addEventListener('mousemove',e=>{if(!dragging)return;tx+=e.clientX-lx;ty+=e.clientY-ly;lx=e.clientX;ly=e.clientY;applyT();});
+document.addEventListener('mouseup',()=>dragging=false);
+cont.addEventListener('touchstart',e=>{if(e.touches.length===1){dragging=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;}},{passive:true});
+cont.addEventListener('touchmove',e=>{if(!dragging||e.touches.length!==1)return;tx+=e.touches[0].clientX-lx;ty+=e.touches[0].clientY-ly;lx=e.touches[0].clientX;ly=e.touches[0].clientY;applyT();},{passive:true});
+cont.addEventListener('touchend',()=>dragging=false);
+
+const NS='http://www.w3.org/2000/svg';
+function se(tag,a={}){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e;}
+function pathD(pts){return pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');}
+
+function drawMap(apiRoutes){
+  const vp=document.getElementById('vp');vp.innerHTML='';
+  vp.appendChild(se('rect',{x:0,y:0,width:W_COORD,height:H_COORD,fill:'#0d1117'}));
+  [[40,40,200,160],[290,40,220,120],[560,30,120,40],[740,40,250,110],[1060,40,180,120],
+   [40,240,130,200],[1120,250,180,180],[40,490,180,160],[1120,480,180,180],
+   [40,700,200,120],[1000,700,280,120],[400,760,300,80]
+  ].forEach(([x,y,w,h])=>vp.appendChild(se('rect',{x,y,width:w,height:h,fill:'#121820',rx:8})));
+  ['M 0,452 L 1400,452','M 0,638 L 1400,638','M 528,0 L 528,950','M 108,0 L 108,950','M 948,0 L 948,950']
+    .forEach(d=>vp.appendChild(se('path',{d,stroke:'#161d2a','stroke-width':'10',fill:'none'})));
+  [[60,80,'Yunusobod'],[60,200,'Chilonzor'],[60,640,'Sergeli'],[1100,90,'Aeroport'],[1060,680,"Qo'yliq"],[60,800,'Choshtepa'],[60,440,'Markaz']]
+    .forEach(([x,y,t])=>{const el=se('text',{x,y,fill:'#1a2238','font-size':'22','font-weight':'800','font-family':'Inter,sans-serif','text-anchor':'start','user-select':'none'});el.textContent=t;vp.appendChild(el);});
+
+  const trams=apiRoutes.filter(r=>r.type==='tram');
+  const buses=apiRoutes.filter(r=>r.type==='bus');
+  trams.forEach(route=>{
+    const pts=routePts(route);if(pts.length<2)return;
+    const d=pathD(pts);const g=se('g',{class:'layer-tram','data-id':route.id,style:'cursor:pointer'});
+    g.appendChild(se('path',{d,stroke:colorMap[route.id],'stroke-width':'2.5','stroke-dasharray':'6,3',fill:'none','stroke-linecap':'round',opacity:'0.7'}));
+    const hit=se('path',{d,stroke:'transparent','stroke-width':'12',fill:'none',style:'cursor:pointer'});
+    hit.addEventListener('click',()=>showDetail(route));
+    hit.addEventListener('mouseenter',e=>showTip(e,route.number+' — '+route.name,route));
+    hit.addEventListener('mouseleave',hideTip);g.appendChild(hit);vp.appendChild(g);
+  });
+  buses.forEach(route=>{
+    const pts=routePts(route);if(pts.length<2)return;
+    const d=pathD(pts);const g=se('g',{class:'layer-bus','data-id':route.id,style:'cursor:pointer'});
+    g.appendChild(se('path',{d,stroke:colorMap[route.id],'stroke-width':'1.8','stroke-dasharray':'4,4',fill:'none','stroke-linecap':'round',opacity:'0.45'}));
+    const hit=se('path',{d,stroke:'transparent','stroke-width':'10',fill:'none'});
+    hit.addEventListener('click',()=>showDetail(route));
+    hit.addEventListener('mouseenter',e=>showTip(e,route.number+' — '+route.name,route));
+    hit.addEventListener('mouseleave',hideTip);g.appendChild(hit);vp.appendChild(g);
+  });
+
+  METRO_LINES.forEach(line=>{
+    const g=se('g',{class:'layer-metro','data-line':line.key});
+    const pts=line.stations;const d=pathD(pts);
+    g.appendChild(se('path',{d,stroke:line.color,'stroke-width':'10',fill:'none',filter:'url(#glow)','stroke-linecap':'round','stroke-linejoin':'round',opacity:'0.4'}));
+    g.appendChild(se('path',{d,stroke:line.color,'stroke-width':line.stroke,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'}));
+    const hit=se('path',{d,stroke:'transparent','stroke-width':'18',fill:'none',style:'cursor:pointer'});
+    const apiRoute=apiRoutes.find(r=>r.type==='metro'&&(r.number===line.key.toUpperCase()||(line.key==='m1'&&r.number==='M1')||(line.key==='m2'&&r.number==='M2')||(line.key==='m3'&&r.number==='M3')));
+    hit.addEventListener('click',()=>{if(apiRoute)showDetail(apiRoute);else showMetroLineDetail(line);});
+    hit.addEventListener('mouseenter',e=>showTipLine(e,line));hit.addEventListener('mouseleave',hideTip);
+    g.appendChild(hit);vp.appendChild(g);
+  });
+
+  const metroLayer=se('g',{class:'layer-metro layer-stops'});
+  METRO_LINES.forEach(line=>{
+    line.stations.forEach(st=>{
+      const key=st.x+','+st.y;const isXfer=INTERCHANGES.has(key);
+      if(isXfer){
+        metroLayer.appendChild(se('circle',{cx:st.x,cy:st.y,r:'13',fill:line.color,filter:'url(#glow)',opacity:'0.3'}));
+        metroLayer.appendChild(se('circle',{cx:st.x,cy:st.y,r:'10',fill:'#0d1117',stroke:'#ffffff','stroke-width':'2.5',class:'stop-dot'}));
+        metroLayer.appendChild(se('circle',{cx:st.x,cy:st.y,r:'4',fill:'#ffffff',class:'stop-dot'}));
+      } else {
+        metroLayer.appendChild(se('circle',{cx:st.x,cy:st.y,r:'5.5',fill:line.color,stroke:'#0d1117','stroke-width':'2',class:'stop-dot'}));
+      }
+      const dot=se('circle',{cx:st.x,cy:st.y,r:'12',fill:'transparent',style:'cursor:pointer'});
+      dot.addEventListener('mouseenter',e=>showTipStation(e,st.n,line));dot.addEventListener('mouseleave',hideTip);
+      dot.addEventListener('click',()=>showMetroLineDetail(line));metroLayer.appendChild(dot);
+      const above=st.y<H_COORD/2;const labelY=above?st.y-12:st.y+18;
+      const isLeft=st.x<250;const isRight=st.x>1150;
+      let anchor='middle',labelX=st.x;
+      if(isLeft){anchor='start';labelX=st.x+14;}if(isRight){anchor='end';labelX=st.x-14;}
+      const txt=se('text',{x:labelX,y:labelY,fill:'#c8d4e8','font-size':'9.5','font-family':'Inter,sans-serif','text-anchor':anchor,'font-weight':'500','pointer-events':'none'});
+      txt.textContent=st.n;metroLayer.appendChild(txt);
+    });
+  });
+  vp.appendChild(metroLayer);
+
+  const leg=document.getElementById('map-legend');
+  leg.innerHTML='<div style="font-size:11px;font-weight:700;color:#c8d0e0;margin-bottom:6px">Liniyalar</div>';
+  METRO_LINES.forEach(line=>{
+    leg.innerHTML+=`<div class="leg-row"><div class="leg-line" style="background:${line.color};box-shadow:0 0 6px ${line.color}"></div><span>${line.label}</span></div>`;
+  });
+  leg.innerHTML+=`<div class="leg-row"><div class="leg-line" style="background:repeating-linear-gradient(90deg,#f59e0b 0,#f59e0b 5px,transparent 5px,transparent 9px);height:3px"></div><span>Tramvay</span></div>`;
+  leg.innerHTML+=`<div class="leg-row"><div class="leg-ring"></div><span>Aktarma bekat</span></div>`;
+}
+
+const layerState={metro:true,tram:true,bus:true,stops:true};
+function toggleL(layer,btn){
+  layerState[layer]=!layerState[layer];btn.classList.toggle('active',layerState[layer]);
+  const svg=document.querySelector('#map-svg');const on=layerState[layer];
+  if(layer==='stops'){svg.querySelectorAll('.stop-dot').forEach(e=>{e.style.opacity=on?'':'0';});}
+  else{svg.querySelectorAll('.layer-'+layer).forEach(e=>{e.style.opacity=on?'':'0';e.style.pointerEvents=on?'':'none';});
+    const sec=document.getElementById('sec-'+layer);if(sec)sec.style.display=on?'':'none';}
+}
+
+function showTip(e,text,route){const tt=document.getElementById('tip');const icon=route.type==='metro'?'🚇':route.type==='tram'?'🚋':'🚌';tt.innerHTML=`<strong>${text}</strong><br><span style="color:#8892a8;font-size:11px">${icon} ${route.stops} bekat · ${route.km} km</span>`;tt.style.display='block';moveTip(e);document.addEventListener('mousemove',moveTip);}
+function showTipLine(e,line){const tt=document.getElementById('tip');tt.innerHTML=`<strong>🚇 ${line.label}</strong><br><span style="color:#8892a8;font-size:11px">${line.stations.length} bekat</span>`;tt.style.display='block';moveTip(e);document.addEventListener('mousemove',moveTip);}
+function showTipStation(e,name,line){const tt=document.getElementById('tip');tt.innerHTML=`<strong>${name}</strong><br><span style="color:${line.color};font-size:11px">● ${line.label}</span>`;tt.style.display='block';moveTip(e);document.addEventListener('mousemove',moveTip);}
+function hideTip(){document.getElementById('tip').style.display='none';document.removeEventListener('mousemove',moveTip);}
+function moveTip(e){const tt=document.getElementById('tip');tt.style.left=(e.clientX+16)+'px';tt.style.top=(e.clientY-42)+'px';}
+
+function openDetail(title,bodyHtml,link){
+  document.getElementById('rd-title').innerHTML=title;document.getElementById('rd-body').innerHTML=bodyHtml;
+  document.getElementById('rd-link').href=link;document.getElementById('r-detail').style.display='';
+  document.getElementById('r-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showDetail(route){
+  const c=colorMap[route.id]||'#22c77a';const icon=route.type==='metro'?'🚇':route.type==='tram'?'🚋':'🚌';
+  openDetail(`<span style="color:${c}">${icon} ${route.number}</span> — ${route.name}`,
+    fld('Tur',typeLabel(route.type))+fld("Yo'nalish",route.name)+fld('Bekatlar',route.stops+' ta')+fld('Masofa',route.km+' km')+fld('Ish vaqti',route.hours||'—')+fld('Holat',statusBadge(route.status)),
+    '/pages/schedule.html?id='+route.id);
+  document.querySelectorAll('.ic').forEach(el=>el.classList.toggle('sel',+el.dataset.id===route.id));
+}
+function showMetroLineDetail(line){
+  openDetail(`<span style="color:${line.color}">🚇 ${line.label}</span>`,
+    fld('Liniya',line.label)+fld('Bekatlar',line.stations.length+' ta')+fld('Terminal 1',line.stations[0].n)+fld('Terminal 2',line.stations[line.stations.length-1].n),
+    '/pages/routes.html?filter=metro');
+}
+function fld(l,v){return `<div class="r-field"><div class="r-label">${l}</div><div class="r-value">${v}</div></div>`;}
+
+function buildCards(routes){
+  ['metro','tram','bus'].forEach(type=>{
+    const group=routes.filter(r=>r.type===type);const sec=document.getElementById('sec-'+type);const box=document.getElementById('ic-'+type);
+    if(!group.length)return;sec.style.display='';
+    const icon=type==='metro'?'🚇':type==='tram'?'🚋':'🚌';
+    box.innerHTML=group.map(r=>{const c=colorMap[r.id];return `<div class="ic" data-id="${r.id}" onclick="showDetail(allRoutes.find(x=>x.id===${r.id}))">
+      <div class="ic-title" style="color:${c}">${icon} ${r.number} — ${r.name}</div>
+      <div class="ic-row"><span>Bekatlar</span><span>${r.stops} ta</span></div>
+      <div class="ic-row"><span>Masofa</span><span>${r.km} km</span></div>
+      <div class="ic-row"><span>Ish vaqti</span><span style="font-family:var(--font-mono);font-size:11px">${r.hours||'—'}</span></div>
+      <div class="ic-row"><span>Holat</span><span>${statusBadge(r.status)}</span></div>
+      <div class="ic-row"><span>Jadval</span><span><a href="/pages/schedule.html?id=${r.id}" style="color:#22c77a;text-decoration:none" onclick="event.stopPropagation()">Ko'rish →</a></span></div>
+    </div>`}).join('');
+  });
+}
+
+let allRoutes=[];
+(async function init(){
+  allRoutes=await API.getRoutes();
+  const metros=allRoutes.filter(r=>r.type==='metro');
+  const trams=allRoutes.filter(r=>r.type==='tram');
+  const buses=allRoutes.filter(r=>r.type==='bus');
+  metros.forEach((r,i)=>colorMap[r.id]=METRO_LINES[i%METRO_LINES.length]?.color||'#3b82f6');
+  trams.forEach((r,i)=>colorMap[r.id]=TRAM_COLORS[i%TRAM_COLORS.length]);
+  buses.forEach((r,i)=>colorMap[r.id]=BUS_COLORS[i%BUS_COLORS.length]);
+  drawMap(allRoutes);buildCards(allRoutes);resetView();
+})();
+</script>
+</body>
+</html>

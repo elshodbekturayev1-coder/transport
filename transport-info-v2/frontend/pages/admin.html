@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin Panel — TransportInfo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
+  <nav class="sidebar-nav">
+    <a href="/index.html" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a>
+    <a href="/pages/routes.html" class="nav-link"><span class="nav-icon">⟶</span> Marshrutlar</a>
+    <a href="/pages/schedule.html" class="nav-link"><span class="nav-icon">◷</span> Jadval</a>
+    <a href="/pages/map.html" class="nav-link"><span class="nav-icon">◉</span> Xarita</a>
+    <a href="/pages/tickets.html" class="nav-link"><span class="nav-icon">◫</span> Chipta</a>
+    <a href="/pages/news.html" class="nav-link"><span class="nav-icon">▣</span> Yangiliklar</a>
+    <a href="/pages/admin.html" class="nav-link active admin-link"><span class="nav-icon">⚙</span> Admin Panel</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="backend-status" style="font-size:11px;margin-bottom:6px"></div>
+    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="top-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="header-title"><h1>Admin Panel</h1><p>Marshrutlarni boshqarish</p></div>
+    <div class="header-actions"><div class="user-badge" style="background:var(--red-light);color:var(--red-text)">Admin</div></div>
+  </header>
+
+  <div style="padding:16px 28px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- ADD ROUTE -->
+    <div class="panel">
+      <div class="panel-header"><h2>Yangi marshrut qo'shish</h2></div>
+      <div class="admin-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Raqam *</label>
+            <input class="form-control" id="f-number" placeholder="99"/>
+          </div>
+          <div class="form-group">
+            <label>Tur *</label>
+            <select class="form-control" id="f-type">
+              <option value="bus">🚌 Avtobus</option>
+              <option value="metro">🚇 Metro</option>
+              <option value="tram">🚋 Tram</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Yo'nalish nomi *</label>
+          <input class="form-control" id="f-name" placeholder="Masalan: Yangi shahar — Markaz"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Bekatlar soni</label>
+            <input class="form-control" type="number" id="f-stops" placeholder="20"/>
+          </div>
+          <div class="form-group">
+            <label>Masofa (km)</label>
+            <input class="form-control" type="number" step="0.1" id="f-km" placeholder="15.0"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ish vaqti</label>
+            <input class="form-control" id="f-hours" placeholder="06:00-22:00"/>
+          </div>
+          <div class="form-group">
+            <label>Holat</label>
+            <select class="form-control" id="f-status">
+              <option value="active">Faol</option>
+              <option value="delay">Kechikmoqda</option>
+              <option value="stopped">To'xtatildi</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addRoute()">+ Marshrut qo'shish</button>
+      </div>
+    </div>
+
+    <!-- MANAGE ROUTES -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Marshrutlarni boshqarish</h2>
+        <button class="btn-outline" onclick="loadManageList()" style="font-size:12px;padding:5px 10px">⟳</button>
+      </div>
+      <div id="manage-list" style="padding:8px 0;max-height:420px;overflow-y:auto">
+        <div style="padding:20px;text-align:center;color:var(--text-muted)">Yuklanmoqda...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEWS MANAGEMENT -->
+  <div class="panel-full">
+    <div class="panel-header"><h2>Yangilik qo'shish</h2></div>
+    <div style="padding:16px;display:grid;grid-template-columns:auto 1fr 1fr auto;gap:12px;align-items:end">
+      <div class="form-group" style="margin:0">
+        <label>Kategoriya</label>
+        <select class="form-control" id="n-cat">
+          <option value="info">Yangilik</option>
+          <option value="danger">Muhim</option>
+          <option value="warn">E'lon</option>
+          <option value="ok">Ijobiy</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Sarlavha *</label>
+        <input class="form-control" id="n-title" placeholder="Yangilik sarlavhasi"/>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Tavsif</label>
+        <input class="form-control" id="n-desc" placeholder="Qo'shimcha ma'lumot"/>
+      </div>
+      <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="addNews()">Qo'shish</button>
+    </div>
+  </div>
+</main>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+async function loadManageList() {
+  const routes = await API.getRoutes();
+  document.getElementById('manage-list').innerHTML = routes.map(r =>
+    '<div class="route-item" style="padding:10px 16px" id="ri-' + r.id + '">' +
+    '<div class="route-num ' + typeClass(r.type) + '">' + r.number + '</div>' +
+    '<div class="route-info"><div class="route-name">' + r.name + '</div><div class="route-meta">' + r.stops + ' bekat</div></div>' +
+    '<select onchange="changeStatus(' + r.id + ',this.value)" style="padding:4px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:12px;cursor:pointer;margin-right:6px">' +
+      '<option value="active"' + (r.status==='active'?'selected':'') + '>Faol</option>' +
+      '<option value="delay"' + (r.status==='delay'?'selected':'') + '>Kechik.</option>' +
+      '<option value="stopped"' + (r.status==='stopped'?'selected':'') + ">To'xtat.</option>" +
+    '</select>' +
+    '<button onclick="deleteRoute(' + r.id + ')" style="padding:4px 10px;background:var(--red-light);border:1px solid var(--red);border-radius:6px;color:var(--red-text);font-size:12px;cursor:pointer">O\'ch.</button>' +
+    '</div>'
+  ).join('');
+}
+
+async function addRoute() {
+  const data = {
+    number: document.getElementById('f-number').value.trim(),
+    type:   document.getElementById('f-type').value,
+    name:   document.getElementById('f-name').value.trim(),
+    stops:  +document.getElementById('f-stops').value || 0,
+    km:     +document.getElementById('f-km').value || 0,
+    hours:  document.getElementById('f-hours').value.trim() || '06:00-22:00',
+    status: document.getElementById('f-status').value,
+  };
+  if (!data.number || !data.name) { showToast("Raqam va nomni kiriting", 'warn'); return; }
+
+  const res = await API.createRoute(data);
+  if (res && res.success) {
+    showToast(data.number + '-marshrut qo\'shildi!', 'ok');
+    ['f-number','f-name','f-stops','f-km','f-hours'].forEach(id => document.getElementById(id).value = '');
+    loadManageList();
+  } else {
+    showToast((res && res.error) || "Xato yuz berdi", 'err');
+  }
+}
+
+async function changeStatus(id, status) {
+  const res = await API.updateRoute(id, { status });
+  if (res && res.success) {
+    showToast('Holat yangilandi: ' + status, 'ok');
+  } else {
+    showToast("Yangilashda xato", 'err');
+  }
+}
+
+async function deleteRoute(id) {
+  if (!confirm("Bu marshrutni o'chirishni tasdiqlaysizmi?")) return;
+  const ok = await API.deleteRoute(id);
+  if (ok) {
+    showToast("Marshrut o'chirildi", 'ok');
+    loadManageList();
+  } else {
+    showToast("O'chirishda xato", 'err');
+  }
+}
+
+async function addNews() {
+  const data = {
+    cat:   document.getElementById('n-cat').value,
+    title: document.getElementById('n-title').value.trim(),
+    desc:  document.getElementById('n-desc').value.trim(),
+  };
+  if (!data.title) { showToast("Sarlavhani kiriting", 'warn'); return; }
+  const res = await API.addNews(data);
+  if (res) {
+    showToast("Yangilik qo'shildi!", 'ok');
+    document.getElementById('n-title').value = '';
+    document.getElementById('n-desc').value  = '';
+  } else {
+    showToast("Xato yuz berdi", 'err');
+  }
+}
+
+loadManageList();
+</script>
+</body>
+</html>

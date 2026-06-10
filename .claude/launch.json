@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "transport-server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/server.js"],
+      "autoPort": true
+    }
+  ]
+}
