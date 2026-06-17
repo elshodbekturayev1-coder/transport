@@ -39,6 +39,69 @@ const MOCK = {
   ],
 };
 
+// ── Station arrival data ─────────────────────────────────────────────────────
+// Each route: startTime (minutes from midnight), endTime, frequency (min between trips), stops array with [name, minutesFromStart]
+const ROUTE_STOPS = [
+  { routeId:1, number:'42', type:'bus',  name:'Chilonzor → Yunusobod',    color:'#8b5cf6', start:330, end:1380, freq:15,
+    stops:[['Chilonzor metro',0],["Do'stlik",4],['Beruniy',8],['Mirobod',12],['Tinchlik',16],
+           ['Mustaqillik maydoni',20],['Amir Temur xiyoboni',24],["Yunusobod 1",28],["Yunusobod 3",32],['Osiyo',36]] },
+  { routeId:2, number:'17', type:'bus',  name:'Sergeli → Markaziy bozor', color:'#f59e0b', start:300, end:1350, freq:20,
+    stops:[['Sergeli',0],["To'qimachilik",5],["Qo'yliq",10],['Chilonzor metro',14],
+           ['Beruniy',18],['Markaziy bozor',24],['Amir Temur xiyoboni',28]] },
+  { routeId:3, number:'88', type:'bus',  name:'Mirobod → Olmazor',        color:'#10b981', start:360, end:1320, freq:18,
+    stops:[['Mirobod',0],['Tinchlik',5],['Mustaqillik maydoni',9],['Olmazor',15],
+           ['Sergeli',20],["Qo'yliq",25]] },
+  { routeId:4, number:'M1', type:'metro',name:'Chilonzor liniyasi',        color:'#ef4444', start:360, end:1440, freq:6,
+    stops:[['Chilonzor metro',0],['Mirzo Ulugbek',3],['Hamidulla Olimiy',6],['Tinchlik',9],
+           ["O'zbekiston",12],['Amir Temur xiyoboni',15],['Yunus Rajabiy',18]] },
+  { routeId:5, number:'M2', type:'metro',name:"O'zbekiston liniyasi",      color:'#3b82f6', start:360, end:1440, freq:7,
+    stops:[["O'zbekiston",0],['Mustaqillik maydoni',4],['Kosmonavtlar',8],['Ming Orik',12],['Shahar',16]] },
+  { routeId:7, number:'55', type:'bus',  name:"Yangiyo'l → Shahar markazi",color:'#06b6d4', start:360, end:1320, freq:25,
+    stops:[["Yangiyo'l",0],['Qibray',8],['Sergeli',16],['Chilonzor metro',22],
+           ['Mustaqillik maydoni',30],['Markaziy bozor',36],['Shahar markazi',42]] },
+];
+
+// Return next N arrival times (as "HH:MM" strings) for a route at a stop
+function nextArrivals(route, stopMinutes, count = 3) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const results = [];
+  // First trip that reaches this stop
+  let trip = route.start + stopMinutes;
+  while (trip <= route.end + stopMinutes && results.length < count) {
+    if (trip > nowMin) {
+      const h = Math.floor(trip / 60) % 24;
+      const m = trip % 60;
+      const diff = trip - nowMin;
+      results.push({
+        time: String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'),
+        diff,
+        label: diff < 1 ? 'Hozir' : diff < 60 ? diff + ' daqiqa' : Math.floor(diff/60) + 'h ' + (diff%60) + 'm',
+      });
+    }
+    trip += route.freq;
+  }
+  return results;
+}
+
+// Get all arrivals at a station name
+function getStationArrivals(stationName) {
+  const q = stationName.trim().toLowerCase();
+  const arrivals = [];
+  ROUTE_STOPS.forEach(route => {
+    const match = route.stops.find(([name]) => name.toLowerCase().includes(q));
+    if (!match) return;
+    const [, stopMin] = match;
+    const next = nextArrivals(route, stopMin, 3);
+    if (next.length) arrivals.push({ route, stopMin, arrivals: next });
+  });
+  arrivals.sort((a, b) => (a.arrivals[0]?.diff ?? 999) - (b.arrivals[0]?.diff ?? 999));
+  return arrivals;
+}
+
+// Collect all unique station names
+const ALL_STATIONS = [...new Set(ROUTE_STOPS.flatMap(r => r.stops.map(([n]) => n)))].sort();
+
 let backendOnline = false;
 
 async function apiFetch(endpoint, options = {}) {
