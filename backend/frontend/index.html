@@ -5,6 +5,97 @@
   <title>TransportInfo — Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+/* Arrival Board */
+.arrival-board-panel { margin-top: 0; }
+.arrival-live-badge { display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--success-text);background:var(--success-dim);border:1px solid var(--success-border);padding:5px 12px;border-radius:99px; }
+.arrival-search-wrap { padding:16px 20px 0;position:relative; }
+.arrival-search-box { display:flex;align-items:center;gap:10px;background:var(--bg-base);border:1.5px solid var(--border-md);border-radius:var(--r-lg);padding:12px 16px;transition:border-color var(--t-base); }
+.arrival-search-box:focus-within { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim); }
+.arrival-search-icon { font-size:16px;flex-shrink:0; }
+.arrival-search-input { flex:1;background:none;border:none;outline:none;font-size:14px;font-family:var(--font);color:var(--text-primary); }
+.arrival-search-input::placeholder { color:var(--text-muted); }
+.arrival-clear { background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:var(--r-sm);transition:all var(--t-base);flex-shrink:0; }
+.arrival-clear:hover { background:var(--bg-raised);color:var(--text-primary); }
+.arrival-dropdown { position:absolute;top:calc(100% + 4px);left:20px;right:20px;z-index:50;background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);max-height:220px;overflow-y:auto; }
+.arrival-dropdown-item { padding:10px 16px;cursor:pointer;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:10px;transition:background var(--t-fast);border-bottom:1px solid var(--border); }
+.arrival-dropdown-item:last-child { border-bottom:none; }
+.arrival-dropdown-item:hover,.arrival-dropdown-item.focused { background:var(--bg-raised);color:var(--text-primary); }
+.arrival-dropdown-item em { color:var(--accent-text);font-style:normal;font-weight:700; }
+.arrival-empty { padding:40px 24px;text-align:center; }
+.arrival-empty-icon { font-size:42px;margin-bottom:12px; }
+.arrival-empty-title { font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px; }
+.arrival-empty-sub { font-size:13px;color:var(--text-muted);margin-bottom:20px; }
+.arrival-quick-picks { display:flex;flex-wrap:wrap;gap:8px;justify-content:center; }
+.arrival-quick-btn { padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bg-raised);border:1px solid var(--border-md);color:var(--text-secondary);cursor:pointer;transition:all var(--t-base);font-family:var(--font); }
+.arrival-quick-btn:hover { background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent-text); }
+.arrival-station-header { padding:20px 20px 4px;display:flex;align-items:center;justify-content:space-between; }
+.arrival-station-name { font-size:18px;font-weight:800;color:var(--text-primary);letter-spacing:-0.03em; }
+.arrival-station-count { font-size:12px;color:var(--text-muted);background:var(--bg-raised);border:1px solid var(--border);padding:4px 10px;border-radius:99px; }
+.arrival-cards { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:12px 20px 20px; }
+.arrival-card { background:var(--bg-base);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all var(--t-base);position:relative;cursor:pointer; }
+.arrival-card:hover { border-color:var(--border-md);transform:translateY(-2px);box-shadow:var(--shadow-md); }
+.arrival-card:hover .arrival-card-route { color:var(--accent-text); }
+.arrival-card-top { padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px; }
+.arrival-card-num { width:40px;height:40px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0; }
+.arrival-card-info { flex:1;min-width:0; }
+.arrival-card-route { font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color var(--t-base); }
+.arrival-card-type { font-size:11px;color:var(--text-muted);margin-top:2px; }
+.arrival-card-next { padding:10px 16px;display:flex;align-items:baseline;gap:8px; }
+.arrival-next-time { font-size:28px;font-weight:800;letter-spacing:-0.05em;line-height:1;font-family:var(--font-mono); }
+.arrival-next-label { font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px; }
+.arrival-next-label.soon  { background:var(--success-dim);color:var(--success-text);border:1px solid var(--success-border); }
+.arrival-next-label.later { background:var(--accent-dim);color:var(--accent-text);border:1px solid var(--accent-border); }
+.arrival-next-label.far   { background:var(--bg-raised);color:var(--text-muted);border:1px solid var(--border); }
+.arrival-card-times { padding:0 16px 14px;display:flex;gap:8px;flex-wrap:wrap; }
+.arrival-time-chip { font-size:11.5px;font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;padding:4px 9px; }
+.arrival-none { padding:32px;text-align:center;color:var(--text-muted);font-size:14px;grid-column:1/-1; }
+
+/* Arrival detail modal */
+.ad-modal-overlay { position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px; }
+.ad-modal-overlay.hidden { display:none; }
+.ad-box { background:var(--bg-surface);border:1px solid var(--border-md);border-radius:24px;width:100%;max-width:520px;box-shadow:0 32px 80px rgba(0,0,0,.6);animation:fadeInUp .25s ease;max-height:88vh;overflow-y:auto; }
+.ad-head { padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:14px;position:sticky;top:0;background:var(--bg-surface);z-index:2; }
+.ad-head-left { display:flex;align-items:center;gap:14px;min-width:0; }
+.ad-num { width:48px;height:48px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3); }
+.ad-title    { font-size:15px;font-weight:700;color:var(--text-primary); }
+.ad-subtitle { font-size:12px;color:var(--text-muted);margin-top:3px; }
+.ad-close { width:34px;height:34px;border-radius:10px;flex-shrink:0;background:var(--bg-raised);border:1px solid var(--border-md);color:var(--text-muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--t-base); }
+.ad-close:hover { background:var(--danger-dim);border-color:var(--danger-border);color:var(--danger-text); }
+.ad-station-bar { margin:16px 24px;padding:14px 16px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:var(--r-lg);display:flex;align-items:center;gap:12px; }
+.ad-station-icon { font-size:22px;flex-shrink:0; }
+.ad-station-label { font-size:11px;color:var(--accent-text);font-weight:600;text-transform:uppercase;letter-spacing:.06em; }
+.ad-station-name  { font-size:15px;font-weight:700;color:var(--text-primary);margin-top:2px; }
+.ad-station-stop  { margin-left:auto;font-size:12px;color:var(--text-muted);font-family:var(--font-mono);white-space:nowrap; }
+.ad-section-title { padding:0 24px 10px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em; }
+.ad-times-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 24px 20px; }
+.ad-time-item { background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 8px;text-align:center;transition:all var(--t-base); }
+.ad-time-item.first { background:var(--accent-dim);border-color:var(--accent-border); }
+.ad-time-item.soon  { background:var(--success-dim);border-color:var(--success-border); }
+.ad-time-clock { font-size:16px;font-weight:800;font-family:var(--font-mono);color:var(--text-primary); }
+.ad-time-item.first .ad-time-clock { color:var(--accent-text); }
+.ad-time-item.soon  .ad-time-clock { color:var(--success-text); }
+.ad-time-diff { font-size:10.5px;color:var(--text-muted);margin-top:3px; }
+.ad-stops-list { padding:0 24px 24px;display:flex;flex-direction:column; }
+.ad-stop-item { display:grid;grid-template-columns:18px 2px 1fr;gap:0 12px;position:relative;padding:8px 0;align-items:start; }
+.ad-stop-dot { width:14px;height:14px;border-radius:50%;border:2px solid var(--border-md);background:var(--bg-raised);margin-top:4px;justify-self:center;z-index:1;transition:all var(--t-base); }
+.ad-stop-item.current .ad-stop-dot { background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-dim); }
+.ad-stop-item.passed  .ad-stop-dot { background:var(--success);border-color:var(--success); }
+.ad-stop-line { width:2px;background:var(--border);margin-top:-4px;margin-bottom:-4px;align-self:stretch; }
+.ad-stop-item:last-child .ad-stop-line { display:none; }
+.ad-stop-item.passed .ad-stop-line { background:var(--success-border); }
+.ad-stop-name { font-size:13px;font-weight:600;color:var(--text-secondary); }
+.ad-stop-item.current .ad-stop-name { color:var(--text-primary); }
+.ad-stop-item.passed  .ad-stop-name { color:var(--text-muted); }
+.ad-stop-time { font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px; }
+.ad-stop-you  { font-size:10px;font-weight:700;color:var(--accent-text);background:var(--accent-dim);padding:1px 6px;border-radius:4px;margin-left:6px; }
+
+/* SVG nav icons */
+.nav-icon { width:18px;height:18px;flex-shrink:0;opacity:0.6;display:block; }
+.nav-link:hover .nav-icon, .nav-link.active .nav-icon { opacity:1; }
+
+@media (max-width:640px) { .arrival-cards { grid-template-columns:1fr; } .ad-times-grid { grid-template-columns:repeat(3,1fr); } }
+  </style>
 </head>
 <body>
 
@@ -20,14 +111,35 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Asosiy</div>
-    <a href="/index.html"          class="nav-link active" data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
-    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
-    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
-    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
+    <a href="/index.html"          class="nav-link active" data-page="dashboard">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="/pages/routes.html"   class="nav-link" data-page="routes">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M13 6l6 6-6 6"/></svg>
+      Marshrutlar
+    </a>
+    <a href="/pages/schedule.html" class="nav-link" data-page="schedule">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 12"/></svg>
+      Jadval
+    </a>
+    <a href="/pages/map.html"      class="nav-link" data-page="map">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+      Xarita
+    </a>
     <div class="nav-section-label">Xizmatlar</div>
-    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
-    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
-    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
+    <a href="/pages/tickets.html"  class="nav-link" data-page="tickets">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4V9z"/><line x1="9" y1="7" x2="9" y2="17" stroke-dasharray="2 2"/></svg>
+      Chipta
+    </a>
+    <a href="/pages/news.html"     class="nav-link" data-page="news">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><line x1="18" y1="14" x2="12" y2="14"/><line x1="18" y1="10" x2="12" y2="10"/><line x1="15" y1="18" x2="12" y2="18"/></svg>
+      Yangiliklar
+    </a>
+    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Admin Panel
+    </a>
   </nav>
   <div class="sidebar-footer">
     <div id="backend-status"></div>
@@ -171,145 +283,112 @@
       </div>
     </div>
   </section>
+<!-- Arrival detail modal (outside main so it's fullscreen) -->
+<div id="ad-modal" class="ad-modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')"></div>
+
 </main>
 
 <style>
-/* ── Arrival Board ── */
-.arrival-board-panel { margin-top: 0; }
+/* ── SVG nav icons ── */
+.nav-icon { width:18px; height:18px; flex-shrink:0; }
 
-.arrival-live-badge {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 600; color: var(--success-text);
-  background: var(--success-dim); border: 1px solid var(--success-border);
-  padding: 5px 12px; border-radius: 99px;
-}
+/* ── Arrival card clickable ── */
+.arrival-card { cursor: pointer; }
+.arrival-card:hover .arrival-card-route { color: var(--accent-text); }
 
-.arrival-search-wrap {
-  padding: 16px 20px 0;
-  position: relative;
+/* ── Arrival Detail Modal overlay ── */
+.ad-modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.8); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn .2s ease;
 }
-.arrival-search-box {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--bg-base); border: 1.5px solid var(--border-md);
-  border-radius: var(--r-lg); padding: 12px 16px;
-  transition: border-color var(--t-base);
-}
-.arrival-search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-.arrival-search-icon { font-size: 16px; flex-shrink: 0; }
-.arrival-search-input {
-  flex: 1; background: none; border: none; outline: none;
-  font-size: 14px; font-family: var(--font); color: var(--text-primary);
-}
-.arrival-search-input::placeholder { color: var(--text-muted); }
-.arrival-clear {
-  background: none; border: none; color: var(--text-muted); cursor: pointer;
-  font-size: 14px; padding: 2px 6px; border-radius: var(--r-sm);
-  transition: all var(--t-base); flex-shrink: 0;
-}
-.arrival-clear:hover { background: var(--bg-raised); color: var(--text-primary); }
+.ad-modal-overlay.hidden { display: none; }
 
-.arrival-dropdown {
-  position: absolute; top: calc(100% + 4px); left: 20px; right: 20px; z-index: 50;
+/* ── Arrival Detail Modal ── */
+.ad-box {
   background: var(--bg-surface); border: 1px solid var(--border-md);
-  border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
-  max-height: 220px; overflow-y: auto;
+  border-radius: 24px; width: 100%; max-width: 520px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6); animation: fadeInUp .25s ease;
+  max-height: 88vh; overflow-y: auto;
 }
-.arrival-dropdown-item {
-  padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  display: flex; align-items: center; gap: 10px;
-  transition: background var(--t-fast);
-  border-bottom: 1px solid var(--border);
+.ad-head {
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  position: sticky; top: 0; background: var(--bg-surface); z-index: 2;
 }
-.arrival-dropdown-item:last-child { border-bottom: none; }
-.arrival-dropdown-item:hover, .arrival-dropdown-item.focused { background: var(--bg-raised); color: var(--text-primary); }
-.arrival-dropdown-item em { color: var(--accent-text); font-style: normal; font-weight: 700; }
+.ad-head-left { display:flex; align-items:center; gap:14px; min-width:0; }
+.ad-num {
+  width:48px; height:48px; border-radius:14px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:800; color:#fff;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);
+}
+.ad-title    { font-size:15px; font-weight:700; color:var(--text-primary); }
+.ad-subtitle { font-size:12px; color:var(--text-muted); margin-top:3px; }
+.ad-close {
+  width:34px; height:34px; border-radius:10px; flex-shrink:0;
+  background:var(--bg-raised); border:1px solid var(--border-md);
+  color:var(--text-muted); font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:all var(--t-base);
+}
+.ad-close:hover { background:var(--danger-dim); border-color:var(--danger-border); color:var(--danger-text); }
 
-/* Empty state */
-.arrival-empty {
-  padding: 40px 24px; text-align: center;
+.ad-station-bar {
+  margin:16px 24px; padding:14px 16px;
+  background:var(--accent-dim); border:1px solid var(--accent-border);
+  border-radius:var(--r-lg); display:flex; align-items:center; gap:12px;
 }
-.arrival-empty-icon { font-size: 42px; margin-bottom: 12px; }
-.arrival-empty-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
-.arrival-empty-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.ad-station-icon { font-size:22px; flex-shrink:0; }
+.ad-station-label { font-size:11px; color:var(--accent-text); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+.ad-station-name  { font-size:15px; font-weight:700; color:var(--text-primary); margin-top:2px; }
+.ad-station-stop  { margin-left:auto; font-size:12px; color:var(--text-muted); font-family:var(--font-mono); white-space:nowrap; }
 
-.arrival-quick-picks { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.arrival-quick-btn {
-  padding: 7px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
-  background: var(--bg-raised); border: 1px solid var(--border-md);
-  color: var(--text-secondary); cursor: pointer; transition: all var(--t-base);
-  font-family: var(--font);
-}
-.arrival-quick-btn:hover { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent-text); }
-
-/* Board result */
-.arrival-station-header {
-  padding: 20px 20px 4px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.arrival-station-name {
-  font-size: 18px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em;
-}
-.arrival-station-count {
-  font-size: 12px; color: var(--text-muted);
-  background: var(--bg-raised); border: 1px solid var(--border);
-  padding: 4px 10px; border-radius: 99px;
+.ad-section-title {
+  padding:0 24px 10px; font-size:11px; font-weight:700;
+  color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em;
 }
 
-.arrival-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-  padding: 12px 20px 20px;
+.ad-times-grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:8px; padding:0 24px 20px;
 }
+.ad-time-item {
+  background:var(--bg-raised); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:10px 8px; text-align:center;
+  transition:all var(--t-base);
+}
+.ad-time-item.first  { background:var(--accent-dim); border-color:var(--accent-border); }
+.ad-time-item.soon   { background:var(--success-dim); border-color:var(--success-border); }
+.ad-time-clock { font-size:16px; font-weight:800; font-family:var(--font-mono); color:var(--text-primary); }
+.ad-time-item.first  .ad-time-clock { color:var(--accent-text); }
+.ad-time-item.soon   .ad-time-clock { color:var(--success-text); }
+.ad-time-diff  { font-size:10.5px; color:var(--text-muted); margin-top:3px; }
 
-.arrival-card {
-  background: var(--bg-base); border: 1px solid var(--border);
-  border-radius: var(--r-lg); overflow: hidden;
-  transition: all var(--t-base);
-  position: relative;
+.ad-stops-list { padding:0 24px 24px; display:flex; flex-direction:column; }
+.ad-stop-item  {
+  display:grid; grid-template-columns:18px 2px 1fr;
+  gap:0 12px; position:relative; padding:8px 0;
+  align-items:start;
 }
-.arrival-card:hover { border-color: var(--border-md); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-
-.arrival-card-top {
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
+.ad-stop-dot {
+  width:14px; height:14px; border-radius:50%; border:2px solid var(--border-md);
+  background:var(--bg-raised); margin-top:4px; justify-self:center; z-index:1;
+  transition:all var(--t-base);
 }
-.arrival-card-num {
-  width: 40px; height: 40px; border-radius: var(--r-md);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0;
+.ad-stop-item.current .ad-stop-dot { background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-dim); }
+.ad-stop-item.passed  .ad-stop-dot { background:var(--success); border-color:var(--success); }
+.ad-stop-line {
+  width:2px; background:var(--border); margin-top:-4px; margin-bottom:-4px; align-self:stretch;
 }
-.arrival-card-info { flex: 1; min-width: 0; }
-.arrival-card-route { font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.arrival-card-type  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-.arrival-card-next {
-  padding: 10px 16px;
-  display: flex; align-items: baseline; gap: 8px;
-}
-.arrival-next-time {
-  font-size: 28px; font-weight: 800; letter-spacing: -0.05em; line-height: 1;
-  font-family: var(--font-mono);
-}
-.arrival-next-label {
-  font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 99px;
-}
-.arrival-next-label.soon  { background: var(--success-dim); color: var(--success-text); border: 1px solid var(--success-border); }
-.arrival-next-label.later { background: var(--accent-dim);  color: var(--accent-text);  border: 1px solid var(--accent-border); }
-.arrival-next-label.far   { background: var(--bg-raised);   color: var(--text-muted);   border: 1px solid var(--border); }
-
-.arrival-card-times {
-  padding: 0 16px 14px;
-  display: flex; gap: 8px; flex-wrap: wrap;
-}
-.arrival-time-chip {
-  font-size: 11.5px; font-family: var(--font-mono); font-weight: 600;
-  color: var(--text-secondary); background: var(--bg-raised);
-  border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px;
-}
-
-.arrival-none { padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px; grid-column: 1/-1; }
+.ad-stop-item:last-child .ad-stop-line { display:none; }
+.ad-stop-item.passed .ad-stop-line { background:var(--success-border); }
+.ad-stop-info  { padding-left:0; }
+.ad-stop-name  { font-size:13px; font-weight:600; color:var(--text-secondary); }
+.ad-stop-item.current .ad-stop-name { color:var(--text-primary); }
+.ad-stop-item.passed  .ad-stop-name { color:var(--text-muted); }
+.ad-stop-time  { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); margin-top:2px; }
+.ad-stop-you   { font-size:10px; font-weight:700; color:var(--accent-text); background:var(--accent-dim); padding:1px 6px; border-radius:4px; margin-left:6px; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -456,7 +535,7 @@ function renderArrivalBoard(stationName) {
       const labelClass = diff <= 5 ? 'soon' : diff <= 20 ? 'later' : 'far';
       const labelText  = diff <= 1 ? '🟢 Hozir!' : diff + ' daqiqa';
       const rest = arr.slice(1);
-      return '<div class="arrival-card">' +
+      return '<div class="arrival-card" onclick="openArrivalDetail(' + route.routeId + ',\'' + stationName.replace(/'/g,"\\'") + '\')" title="Batafsil ko\'rish">' +
         '<div class="arrival-card-top">' +
           '<div class="arrival-card-num" style="background:' + route.color + '">' + route.number + '</div>' +
           '<div class="arrival-card-info">' +
@@ -485,6 +564,77 @@ function showArrivalEmpty() {
         quickStations.map(s => '<button class="arrival-quick-btn" onclick="pickStation(\'' + s + '\')">' + s + '</button>').join('') +
       '</div>' +
     '</div>';
+}
+
+// ── Arrival Detail Modal ──────────────────────────────────────────────────
+function openArrivalDetail(routeId, stationName) {
+  const route = ROUTE_STOPS.find(r => r.routeId === routeId);
+  if (!route) return;
+  const stopEntry = route.stops.find(([n]) => n.toLowerCase() === stationName.toLowerCase());
+  if (!stopEntry) return;
+  const [, stopMin] = stopEntry;
+  const upcoming = nextArrivals(route, stopMin, 12);
+  const typeLabel = route.type === 'metro' ? 'Metro' : route.type === 'tram' ? 'Tramvay' : 'Avtobus';
+  const typeIc    = route.type === 'metro' ? '🚇' : route.type === 'tram' ? '🚊' : '🚌';
+
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const startH = Math.floor(route.start/60), startM = route.start%60;
+  const endH   = Math.floor(route.end/60)%24, endM = route.end%60;
+  const pad = n => String(n).padStart(2,'0');
+
+  document.getElementById('ad-modal').innerHTML =
+    '<div class="ad-box">' +
+      '<div class="ad-head">' +
+        '<div class="ad-head-left">' +
+          '<div class="ad-num" style="background:' + route.color + '">' + route.number + '</div>' +
+          '<div>' +
+            '<div class="ad-title">' + typeIc + ' ' + route.name + '</div>' +
+            '<div class="ad-subtitle">' + typeLabel + ' · Har ' + route.freq + ' daqiqada · ' + pad(startH)+':'+pad(startM) + ' – ' + pad(endH)+':'+pad(endM) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button class="ad-close" onclick="document.getElementById(\'ad-modal\').classList.add(\'hidden\')">✕</button>' +
+      '</div>' +
+
+      '<div class="ad-station-bar">' +
+        '<span class="ad-station-icon">🚏</span>' +
+        '<div>' +
+          '<div class="ad-station-label">Tanlangan bekat</div>' +
+          '<div class="ad-station-name">' + stationName + '</div>' +
+        '</div>' +
+        '<div class="ad-station-stop">Bekat ' + (route.stops.findIndex(([n])=>n===stationName)+1) + ' / ' + route.stops.length + '</div>' +
+      '</div>' +
+
+      '<div class="ad-section-title">Keyingi kelishlar</div>' +
+      '<div class="ad-times-grid">' +
+        upcoming.map((t, i) => {
+          const cls = i===0 ? 'first' : t.diff <= 15 ? 'soon' : '';
+          return '<div class="ad-time-item ' + cls + '">' +
+            '<div class="ad-time-clock">' + t.time + '</div>' +
+            '<div class="ad-time-diff">' + (t.diff < 1 ? 'Hozir' : t.diff + ' daq') + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+
+      '<div class="ad-section-title">Barcha bekatlar</div>' +
+      '<div class="ad-stops-list">' +
+        route.stops.map(([name, min], idx) => {
+          const arrMin = route.start + min;
+          const isCurrent = name.toLowerCase() === stationName.toLowerCase();
+          const passed = arrMin < nowMin;
+          return '<div class="ad-stop-item' + (isCurrent?' current':'') + (passed&&!isCurrent?' passed':'') + '">' +
+            '<div class="ad-stop-dot"></div>' +
+            '<div class="ad-stop-line"></div>' +
+            '<div class="ad-stop-info">' +
+              '<div class="ad-stop-name">' + name + (isCurrent ? ' <span class="ad-stop-you">← Siz</span>' : '') + '</div>' +
+              '<div class="ad-stop-time">' + pad(Math.floor(arrMin/60)%24) + ':' + pad(arrMin%60) + ' (birinchi qator)</div>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('ad-modal').classList.remove('hidden');
 }
 
 // Auto-refresh arrivals every 30s if a station is selected
