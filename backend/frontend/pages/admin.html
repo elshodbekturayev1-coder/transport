@@ -5,162 +5,399 @@
   <title>Admin Panel — TransportInfo</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css"/>
+<style>
+/* ── ADMIN TABS ─────────────────────────────────────── */
+.admin-tabs { display:flex; gap:2px; padding:20px 28px 0; border-bottom:1px solid var(--border); }
+.admin-tab  { padding:10px 20px; font-size:13px; font-weight:600; color:var(--text-muted); background:none;
+              border:none; border-bottom:2px solid transparent; cursor:pointer; transition:all var(--t-base);
+              font-family:var(--font); display:flex; align-items:center; gap:7px; }
+.admin-tab:hover   { color:var(--text-primary); }
+.admin-tab.active  { color:var(--accent-text); border-bottom-color:var(--accent); }
+.admin-tab-badge   { background:var(--accent-dim); color:var(--accent-text); font-size:10px; font-weight:700;
+                     padding:1px 7px; border-radius:var(--r-full); }
+.tab-panel  { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── STATS STRIP ───────────────────────────────────── */
+.admin-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; padding:20px 28px; }
+.astat       { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-md);
+               padding:16px 20px; display:flex; align-items:center; gap:14px; }
+.astat-icon  { width:40px; height:40px; border-radius:var(--r-sm); display:flex; align-items:center;
+               justify-content:center; flex-shrink:0; }
+.astat-val   { font-size:24px; font-weight:800; font-family:var(--font-mono); line-height:1; }
+.astat-lbl   { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+/* ── EDIT MODAL ─────────────────────────────────────── */
+.edit-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:200;
+                      display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.edit-modal-overlay.hidden { display:none; }
+.edit-modal { background:var(--bg-card); border:1px solid var(--border-md); border-radius:var(--r-xl);
+              width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-xl); }
+.edit-modal-header { padding:20px 24px 0; display:flex; align-items:center; justify-content:space-between; }
+.edit-modal-header h3 { font-size:16px; font-weight:700; }
+.edit-modal-close  { background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; padding:4px 8px; }
+.edit-modal-body   { padding:20px 24px 24px; }
+
+/* ── USER MANAGEMENT ─────────────────────────────────── */
+.user-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px;
+              padding:20px 28px; }
+.user-card  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
+              padding:20px; display:flex; flex-direction:column; align-items:center; gap:10px;
+              transition:border-color var(--t-base); }
+.user-card:hover  { border-color:var(--border-md); }
+.uc-avatar  { width:54px; height:54px; border-radius:var(--r-full); background:var(--accent-dim);
+              border:2px solid var(--accent-border); display:flex; align-items:center; justify-content:center;
+              font-size:18px; font-weight:700; color:var(--accent-text); }
+.uc-name    { font-size:14px; font-weight:600; text-align:center; }
+.uc-user    { font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
+.uc-perms   { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:4px; }
+.uc-perm    { font-size:10px; font-weight:600; padding:2px 9px; border-radius:var(--r-full);
+              background:var(--bg-raised); color:var(--text-secondary); border:1px solid var(--border); }
+.uc-perm.ok { background:var(--success-dim); color:var(--success-text); border-color:var(--success-border); }
+.uc-perm.no { background:var(--danger-dim);  color:var(--danger-text);  border-color:var(--danger-border); }
+
+/* ── AUDIT LOG ──────────────────────────────────────── */
+.audit-wrap { padding:0 28px 28px; }
+.audit-item { display:grid; grid-template-columns:130px 120px 100px 1fr; gap:12px; align-items:center;
+              padding:11px 16px; border-bottom:1px solid var(--border); font-size:12.5px;
+              transition:background var(--t-fast); }
+.audit-item:hover { background:var(--bg-raised); border-radius:var(--r-sm); }
+.audit-time  { font-family:var(--font-mono); color:var(--text-muted); font-size:11px; }
+.audit-user  { color:var(--text-secondary); font-weight:500; }
+.audit-action{ font-weight:600; color:var(--text-primary); }
+.audit-detail{ color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.audit-head  { display:grid; grid-template-columns:130px 120px 100px 1fr; gap:12px; padding:10px 16px 8px;
+               font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+               color:var(--text-muted); border-bottom:1px solid var(--border-md); }
+
+/* ── MANAGE LIST ────────────────────────────────────── */
+.route-actions { display:flex; align-items:center; gap:6px; }
+.btn-edit  { background:var(--accent-dim); color:var(--accent-text); border:1px solid var(--accent-border);
+             border-radius:var(--r-sm); padding:4px 10px; font-size:11px; font-weight:600;
+             cursor:pointer; transition:all var(--t-fast); font-family:var(--font); }
+.btn-edit:hover { background:var(--accent); color:#fff; }
+.btn-danger{ background:var(--danger-dim); color:var(--danger-text); border:1px solid var(--danger-border);
+             border-radius:var(--r-sm); padding:4px 10px; font-size:11px; font-weight:600;
+             cursor:pointer; transition:all var(--t-fast); font-family:var(--font); }
+.btn-danger:hover { background:var(--danger); color:#fff; }
+</style>
 </head>
 <body>
 
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
-  <nav class="sidebar-nav">
-    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
-    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
-    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
-    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
-    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
-    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
-    <a href="/pages/admin.html"    class="nav-link nav-link-admin active" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div id="backend-status"></div>
-    <div class="sidebar-user">
-      <div id="sidebar-user-info"></div>
-      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
-    </div>
-    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
-  </div>
-</aside>
+<aside class="sidebar" id="sidebar"></aside>
 
 <main class="main-content">
   <header class="top-header">
     <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-    <div class="header-title"><h1>Admin Panel</h1><p>Marshrutlarni boshqarish</p></div>
+    <div class="header-title"><h1>Admin Panel</h1><p>Tizimni boshqarish markazi</p></div>
     <div class="header-actions">
+      <button class="btn-outline" onclick="exportRoutesCSV()" data-require="admin" style="font-size:12px;padding:8px 14px">
+        ↓ CSV Export
+      </button>
       <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
-      <div class="user-badge" id="user-badge" style="border-color:var(--red);background:var(--red-dim)">Admin</div>
+      <div class="user-badge" id="user-badge"></div>
     </div>
   </header>
 
-  <div style="padding:16px 28px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px" data-require="edit">
+  <!-- Stats strip -->
+  <div class="admin-stats" id="admin-stats">
+    <div class="astat"><div class="astat-icon" style="background:var(--accent-dim)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
+    </div><div><div class="astat-val" id="st-total">—</div><div class="astat-lbl">Jami marshrut</div></div></div>
 
-    <!-- ADD ROUTE -->
-    <div class="panel">
-      <div class="panel-header"><h2>Yangi marshrut qo'shish</h2></div>
-      <div class="admin-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Raqam *</label>
-            <input class="form-control" id="f-number" placeholder="99"/>
-          </div>
-          <div class="form-group">
-            <label>Tur *</label>
-            <select class="form-control" id="f-type">
-              <option value="bus">🚌 Avtobus</option>
-              <option value="metro">🚇 Metro</option>
-              <option value="tram">🚋 Tram</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Yo'nalish nomi *</label>
-          <input class="form-control" id="f-name" placeholder="Masalan: Yangi shahar — Markaz"/>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Bekatlar soni</label>
-            <input class="form-control" type="number" id="f-stops" placeholder="20"/>
-          </div>
-          <div class="form-group">
-            <label>Masofa (km)</label>
-            <input class="form-control" type="number" step="0.1" id="f-km" placeholder="15.0"/>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Ish vaqti</label>
-            <input class="form-control" id="f-hours" placeholder="06:00-22:00"/>
-          </div>
-          <div class="form-group">
-            <label>Holat</label>
-            <select class="form-control" id="f-status">
-              <option value="active">✓ Faol</option>
-              <option value="delay">⏱ Kechikmoqda</option>
-              <option value="stopped">⛔ To'xtatildi</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Bekat nomlari <span style="color:var(--text-muted);font-weight:400;text-transform:none">(har bir satrga bitta)</span></label>
-          <textarea class="form-control" id="f-stop-names" rows="5"
-            placeholder="Chilonzor metro&#10;Do'stlik ko'chasi&#10;Beruniy&#10;Buyuk ipak yo'li&#10;Mustaqillik maydoni"
-            style="resize:vertical" oninput="syncStopsCount()"></textarea>
-        </div>
-        <button class="btn-primary" onclick="addRoute()">+ Marshrut qo'shish</button>
-      </div>
-    </div>
+    <div class="astat"><div class="astat-icon" style="background:var(--success-dim)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div><div><div class="astat-val" id="st-active" style="color:var(--success-text)">—</div><div class="astat-lbl">Faol</div></div></div>
 
-    <!-- MANAGE ROUTES -->
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Marshrutlarni boshqarish</h2>
-        <button class="btn-outline" onclick="loadManageList()" style="font-size:12px;padding:5px 12px">⟳</button>
+    <div class="astat"><div class="astat-icon" style="background:var(--warning-dim)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div><div><div class="astat-val" id="st-delay" style="color:var(--warning-text)">—</div><div class="astat-lbl">Kechikmoqda</div></div></div>
+
+    <div class="astat"><div class="astat-icon" style="background:var(--danger-dim)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div><div><div class="astat-val" id="st-stopped" style="color:var(--danger-text)">—</div><div class="astat-lbl">To'xtatildi</div></div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('routes',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M5 16V7a4 4 0 0 1 4-4h4"/><path d="m15 5 4 1-1 4"/></svg>
+      Marshrutlar
+    </button>
+    <button class="admin-tab" onclick="switchTab('news',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>
+      Yangiliklar
+    </button>
+    <button class="admin-tab" onclick="switchTab('users',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Foydalanuvchilar
+      <span class="admin-tab-badge">4</span>
+    </button>
+    <button class="admin-tab" onclick="switchTab('audit',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Audit Log
+      <span class="admin-tab-badge" id="audit-badge">0</span>
+    </button>
+  </div>
+
+  <!-- ─── TAB: ROUTES ─────────────────────────────────────── -->
+  <div class="tab-panel active" id="tab-routes">
+    <div style="padding:20px 28px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px" data-require="edit">
+      <!-- ADD ROUTE -->
+      <div class="panel">
+        <div class="panel-header"><h2>Yangi marshrut qo'shish</h2></div>
+        <div class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Raqam <span style="color:var(--danger-text)">*</span></label>
+              <input class="form-control" id="f-number" placeholder="99"/>
+            </div>
+            <div class="form-group">
+              <label>Tur <span style="color:var(--danger-text)">*</span></label>
+              <select class="form-control" id="f-type">
+                <option value="bus">🚌 Avtobus</option>
+                <option value="metro">🚇 Metro</option>
+                <option value="tram">🚋 Tram</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Yo'nalish nomi <span style="color:var(--danger-text)">*</span></label>
+            <input class="form-control" id="f-name" placeholder="Masalan: Yangi shahar — Markaz"/>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Bekatlar soni</label>
+              <input class="form-control" type="number" id="f-stops" placeholder="20"/>
+            </div>
+            <div class="form-group">
+              <label>Masofa (km)</label>
+              <input class="form-control" type="number" step="0.1" id="f-km" placeholder="15.0"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ish vaqti</label>
+              <input class="form-control" id="f-hours" placeholder="06:00-22:00"/>
+            </div>
+            <div class="form-group">
+              <label>Holat</label>
+              <select class="form-control" id="f-status">
+                <option value="active">✓ Faol</option>
+                <option value="delay">⏱ Kechikmoqda</option>
+                <option value="stopped">⛔ To'xtatildi</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Bekat nomlari <span style="color:var(--text-muted);font-weight:400;text-transform:none">(har bir satrga bitta)</span></label>
+            <textarea class="form-control" id="f-stop-names" rows="5"
+              placeholder="Chilonzor metro&#10;Do'stlik ko'chasi&#10;Beruniy&#10;Buyuk ipak yo'li&#10;Mustaqillik maydoni"
+              style="resize:vertical" oninput="syncStopsCount()"></textarea>
+          </div>
+          <button class="btn-primary" onclick="addRoute()">+ Marshrut qo'shish</button>
+        </div>
       </div>
-      <div id="manage-list" style="padding:4px 0;max-height:480px;overflow-y:auto">
-        <div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Yuklanmoqda...</div></div>
+
+      <!-- MANAGE ROUTES -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Marshrutlarni boshqarish</h2>
+          <div style="display:flex;gap:8px">
+            <button class="btn-outline" onclick="loadManageList()" style="font-size:12px;padding:5px 12px">⟳</button>
+          </div>
+        </div>
+        <div id="manage-list" style="padding:4px 0;max-height:480px;overflow-y:auto">
+          <div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Yuklanmoqda...</div></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- NEWS MANAGEMENT -->
-  <div class="panel-full" data-require="edit">
-    <div class="panel-header"><h2>Yangilik qo'shish</h2></div>
-    <div style="padding:16px 20px;display:grid;grid-template-columns:auto 1fr 1fr auto;gap:12px;align-items:end">
-      <div class="form-group" style="margin:0">
-        <label>Kategoriya</label>
-        <select class="form-control" id="n-cat">
-          <option value="info">🔵 Yangilik</option>
-          <option value="danger">🔴 Muhim</option>
-          <option value="warn">🟡 E'lon</option>
-          <option value="ok">🟢 Ijobiy</option>
-        </select>
+  <!-- ─── TAB: NEWS ───────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-news">
+    <div class="panel-full" style="margin:20px 28px" data-require="edit">
+      <div class="panel-header"><h2>Yangilik qo'shish</h2></div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:auto 1fr 1fr auto;gap:12px;align-items:end">
+        <div class="form-group" style="margin:0">
+          <label>Kategoriya</label>
+          <select class="form-control" id="n-cat">
+            <option value="info">🔵 Yangilik</option>
+            <option value="danger">🔴 Muhim</option>
+            <option value="warn">🟡 E'lon</option>
+            <option value="ok">🟢 Ijobiy</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Sarlavha <span style="color:var(--danger-text)">*</span></label>
+          <input class="form-control" id="n-title" placeholder="Yangilik sarlavhasi"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tavsif</label>
+          <input class="form-control" id="n-desc" placeholder="Qo'shimcha ma'lumot"/>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="addNews()">Qo'shish</button>
       </div>
-      <div class="form-group" style="margin:0">
-        <label>Sarlavha *</label>
-        <input class="form-control" id="n-title" placeholder="Yangilik sarlavhasi"/>
+    </div>
+
+    <div class="panel-full" style="margin:0 28px 28px">
+      <div class="panel-header">
+        <h2>Yangiliklar ro'yxati</h2>
+        <button class="btn-outline" onclick="loadNewsList()" style="font-size:12px;padding:5px 12px">⟳</button>
       </div>
-      <div class="form-group" style="margin:0">
-        <label>Tavsif</label>
-        <input class="form-control" id="n-desc" placeholder="Qo'shimcha ma'lumot"/>
+      <div id="news-list" style="padding:4px 0"></div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: USERS ──────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-users">
+    <div style="padding:20px 28px 0">
+      <div class="panel-header" style="padding:0 0 14px">
+        <h2>Foydalanuvchilar</h2>
+        <span class="panel-sub">Demo kirish ma'lumotlari (ishlab chiqarish uchun o'zgartiring)</span>
       </div>
-      <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="addNews()">Qo'shish</button>
+    </div>
+    <div class="user-grid" id="user-grid"></div>
+
+    <div style="padding:0 28px 28px">
+      <div class="panel-full" style="padding:0">
+        <div class="panel-header"><h2>Rol vakolatlari</h2></div>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>Rol</th><th>Sahifalar</th>
+              <th style="text-align:center">Tahrirlash</th>
+              <th style="text-align:center">O'chirish</th>
+              <th style="text-align:center">Admin</th>
+            </tr></thead>
+            <tbody id="roles-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: AUDIT ──────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-audit">
+    <div class="audit-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 0 12px">
+        <div>
+          <h2 style="font-size:15px;font-weight:700">Audit logi</h2>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:2px">So'nggi 50 ta harakat qayd qilingan</p>
+        </div>
+        <button class="btn-outline" onclick="clearAudit()" style="font-size:12px;padding:6px 14px;color:var(--danger-text);border-color:var(--danger-border)">
+          Tozalash
+        </button>
+      </div>
+      <div class="audit-head">
+        <div>Vaqt</div><div>Foydalanuvchi</div><div>Rol</div><div>Harakat</div>
+      </div>
+      <div id="audit-list">
+        <div class="empty-state"><div class="empty-state-icon" style="font-size:28px">📋</div>
+          <div class="empty-state-title">Hali hech qanday harakat qayd qilinmagan</div>
+          <div class="empty-state-sub">Marshrut qo'shish, o'chirish yoki holatini o'zgartiring</div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
+
+<!-- Edit Route Modal -->
+<div class="edit-modal-overlay hidden" id="edit-modal">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h3>Marshrutni tahrirlash</h3>
+      <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <input type="hidden" id="em-id"/>
+      <div class="form-row">
+        <div class="form-group"><label>Raqam</label><input class="form-control" id="em-number"/></div>
+        <div class="form-group">
+          <label>Tur</label>
+          <select class="form-control" id="em-type">
+            <option value="bus">🚌 Avtobus</option>
+            <option value="metro">🚇 Metro</option>
+            <option value="tram">🚋 Tram</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Yo'nalish nomi</label><input class="form-control" id="em-name"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Bekatlar soni</label><input class="form-control" type="number" id="em-stops"/></div>
+        <div class="form-group"><label>Masofa (km)</label><input class="form-control" type="number" step="0.1" id="em-km"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Ish vaqti</label><input class="form-control" id="em-hours"/></div>
+        <div class="form-group">
+          <label>Holat</label>
+          <select class="form-control" id="em-status">
+            <option value="active">✓ Faol</option>
+            <option value="delay">⏱ Kechikmoqda</option>
+            <option value="stopped">⛔ To'xtatildi</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn-primary" onclick="saveEdit()" style="flex:1">Saqlash</button>
+        <button class="btn-outline" onclick="closeEditModal()" style="flex:1">Bekor qilish</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>
 <script src="/js/app.js"></script>
 <script>
-async function loadManageList() {
+// ── STATS ────────────────────────────────────────────────────
+async function loadStats() {
   const routes = await API.getRoutes();
+  document.getElementById('st-total').textContent   = routes.length;
+  document.getElementById('st-active').textContent  = routes.filter(r=>r.status==='active').length;
+  document.getElementById('st-delay').textContent   = routes.filter(r=>r.status==='delay').length;
+  document.getElementById('st-stopped').textContent = routes.filter(r=>r.status==='stopped').length;
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'news') loadNewsList();
+  if (name === 'users') renderUsers();
+  if (name === 'audit') renderAudit();
+}
+
+// ── MANAGE ROUTES ────────────────────────────────────────────
+let _cachedRoutes = [];
+
+async function loadManageList() {
+  _cachedRoutes = await API.getRoutes();
   const user = getCurrentUser();
   const canDelete = user && (user.role === 'super_admin' || user.role === 'transport_manager');
+  const canEdit   = user && (user.role !== 'viewer');
 
-  document.getElementById('manage-list').innerHTML = routes.length === 0
+  document.getElementById('manage-list').innerHTML = _cachedRoutes.length === 0
     ? '<div class="empty-state"><div class="empty-state-icon">🚌</div><div class="empty-state-title">Marshrutlar topilmadi</div></div>'
-    : routes.map(r =>
+    : _cachedRoutes.map(r =>
       '<div class="route-item" id="ri-' + r.id + '">' +
       '<div class="route-num ' + typeClass(r.type) + '">' + r.number + '</div>' +
-      '<div class="route-info"><div class="route-name">' + r.name + '</div><div class="route-meta">' + r.stops + ' bekat · ' + r.km + ' km</div></div>' +
-      '<select onchange="changeStatus(' + r.id + ',this.value)" style="padding:5px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:12px;cursor:pointer;font-family:var(--font-body);margin-right:6px">' +
-        '<option value="active"' + (r.status==='active'?' selected':'') + '>✓ Faol</option>' +
-        '<option value="delay"'  + (r.status==='delay'?' selected':'')  + '>⏱ Kechik.</option>' +
-        '<option value="stopped"'+ (r.status==='stopped'?' selected':'')+ ">⛔ To'xtat.</option>" +
-      '</select>' +
-      (canDelete
-        ? '<button onclick="deleteRoute(' + r.id + ')" class="btn-danger">O\'ch.</button>'
-        : '') +
-      '</div>'
+      '<div class="route-info">' +
+        '<div class="route-name">' + r.name + '</div>' +
+        '<div class="route-meta">' + r.stops + ' bekat · ' + r.km + ' km · ' + r.hours + '</div>' +
+      '</div>' +
+      '<div class="route-actions">' +
+        '<select onchange="changeStatus(' + r.id + ',this.value)" style="padding:5px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:12px;cursor:pointer;font-family:var(--font)">' +
+          '<option value="active"' + (r.status==='active'?' selected':'') + '>✓ Faol</option>' +
+          '<option value="delay"'  + (r.status==='delay'?' selected':'')  + '>⏱ Kechik.</option>' +
+          '<option value="stopped"'+ (r.status==='stopped'?' selected':'')+ ">⛔ To'xtat.</option>" +
+        '</select>' +
+        (canEdit   ? '<button onclick="openEditModal(' + r.id + ')" class="btn-edit">Tahrir</button>' : '') +
+        (canDelete ? '<button onclick="deleteRoute(' + r.id + ')" class="btn-danger">O\'ch.</button>' : '') +
+      '</div></div>'
     ).join('');
 }
 
@@ -170,56 +407,229 @@ function syncStopsCount() {
 }
 
 async function addRoute() {
+  const num  = document.getElementById('f-number').value.trim();
+  const name = document.getElementById('f-name').value.trim();
+  if (!num || !name) {
+    showToast('Raqam va nomni kiriting', 'warn');
+    document.getElementById(num ? 'f-name' : 'f-number').style.borderColor = 'var(--danger)';
+    setTimeout(() => { document.getElementById('f-number').style.borderColor=''; document.getElementById('f-name').style.borderColor=''; }, 2000);
+    return;
+  }
   const stopNamesRaw = document.getElementById('f-stop-names').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const data = {
-    number:    document.getElementById('f-number').value.trim(),
+    number:    num,
     type:      document.getElementById('f-type').value,
-    name:      document.getElementById('f-name').value.trim(),
+    name,
     stops:     stopNamesRaw.length || +document.getElementById('f-stops').value || 0,
     km:        +document.getElementById('f-km').value || 0,
     hours:     document.getElementById('f-hours').value.trim() || '06:00-22:00',
     status:    document.getElementById('f-status').value,
     stopNames: stopNamesRaw,
   };
-  if (!data.number || !data.name) { showToast('Raqam va nomni kiriting', 'warn'); return; }
   const res = await API.createRoute(data);
   if (res && res.success) {
     showToast(data.number + '-marshrut qo\'shildi!', 'ok');
-    ['f-number','f-name','f-stops','f-km','f-hours'].forEach(id => document.getElementById(id).value='');
+    auditLog('Marshrut qo\'shildi', data.number + ' — ' + data.name);
+    ['f-number','f-name','f-stops','f-km','f-hours'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-stop-names').value = '';
-    loadManageList();
+    loadManageList(); loadStats();
   } else { showToast((res && res.error) || 'Xato yuz berdi', 'err'); }
 }
 
 async function changeStatus(id, status) {
   const res = await API.updateRoute(id, { status });
-  if (res && res.success) showToast('Holat yangilandi: ' + status, 'ok');
-  else showToast('Yangilashda xato', 'err');
+  if (res && res.success) {
+    const r = _cachedRoutes.find(x=>x.id===id);
+    showToast('Holat yangilandi: ' + status, 'ok');
+    auditLog('Holat o\'zgartirildi', (r ? r.number + ' — ' + r.name : '#' + id) + ' → ' + status);
+    loadStats();
+  } else showToast('Yangilashda xato', 'err');
 }
 
 async function deleteRoute(id) {
+  const r = _cachedRoutes.find(x=>x.id===id);
   if (!confirm("Bu marshrutni o'chirishni tasdiqlaysizmi?")) return;
   const ok = await API.deleteRoute(id);
-  if (ok) { showToast("Marshrut o'chirildi", 'ok'); loadManageList(); }
-  else showToast("O'chirishda xato", 'err');
+  if (ok) {
+    showToast("Marshrut o'chirildi", 'ok');
+    auditLog("Marshrut o'chirildi", r ? r.number + ' — ' + r.name : '#' + id);
+    loadManageList(); loadStats();
+  } else showToast("O'chirishda xato", 'err');
+}
+
+async function exportRoutesCSV() {
+  const routes = await API.getRoutes();
+  exportCSV(routes.map(r => ({
+    Raqam: r.number, Tur: typeLabel(r.type), "Yo'nalish": r.name,
+    Bekatlar: r.stops, "Masofa(km)": r.km, "Ish vaqti": r.hours, Holat: r.status,
+  })), 'marshrutlar_' + new Date().toISOString().slice(0,10) + '.csv');
+  auditLog('CSV eksport', 'marshrutlar.csv');
+}
+
+// ── EDIT MODAL ───────────────────────────────────────────────
+function openEditModal(id) {
+  const r = _cachedRoutes.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('em-id').value     = r.id;
+  document.getElementById('em-number').value = r.number;
+  document.getElementById('em-type').value   = r.type;
+  document.getElementById('em-name').value   = r.name;
+  document.getElementById('em-stops').value  = r.stops;
+  document.getElementById('em-km').value     = r.km;
+  document.getElementById('em-hours').value  = r.hours;
+  document.getElementById('em-status').value = r.status;
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+async function saveEdit() {
+  const id = +document.getElementById('em-id').value;
+  const data = {
+    number: document.getElementById('em-number').value.trim(),
+    type:   document.getElementById('em-type').value,
+    name:   document.getElementById('em-name').value.trim(),
+    stops:  +document.getElementById('em-stops').value,
+    km:     +document.getElementById('em-km').value,
+    hours:  document.getElementById('em-hours').value.trim(),
+    status: document.getElementById('em-status').value,
+  };
+  if (!data.number || !data.name) { showToast('Majburiy maydonlarni to\'ldiring', 'warn'); return; }
+  const res = await API.updateRoute(id, data);
+  if (res && res.success) {
+    showToast('Marshrut yangilandi', 'ok');
+    auditLog('Marshrut tahrirlandi', data.number + ' — ' + data.name);
+    closeEditModal(); loadManageList(); loadStats();
+  } else showToast('Yangilashda xato', 'err');
+}
+
+// Close modal on overlay click
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+// ── NEWS ─────────────────────────────────────────────────────
+const CAT_COLORS = { danger:['var(--danger-dim)','var(--danger-text)'], info:['var(--info-dim)','var(--info-text)'], warn:['var(--warning-dim)','var(--warning-text)'], ok:['var(--success-dim)','var(--success-text)'] };
+const CAT_LABELS = { danger:'Muhim', info:'Yangilik', warn:"E'lon", ok:'Ijobiy' };
+
+async function loadNewsList() {
+  const news = await API.getNews();
+  const el = document.getElementById('news-list');
+  if (!news || !news.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📰</div><div class="empty-state-title">Yangiliklar yo\'q</div></div>';
+    return;
+  }
+  el.innerHTML = news.map(n => {
+    const [bg, col] = CAT_COLORS[n.cat] || CAT_COLORS.info;
+    return '<div class="route-item" style="display:flex;align-items:center;gap:12px;padding:12px 20px">' +
+      '<span style="background:' + bg + ';color:' + col + ';padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;white-space:nowrap">' + (CAT_LABELS[n.cat] || n.cat) + '</span>' +
+      '<div style="flex:1"><div style="font-weight:600;font-size:13px">' + n.title + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + (n.desc || '') + ' · ' + n.date + '</div></div>' +
+      '<button onclick="deleteNews(' + n.id + ')" style="background:var(--danger-dim);color:var(--danger-text);border:1px solid var(--danger-border);border-radius:var(--r-sm);padding:4px 10px;font-size:11px;cursor:pointer">O\'ch.</button>' +
+    '</div>';
+  }).join('');
 }
 
 async function addNews() {
-  const data = {
-    cat:   document.getElementById('n-cat').value,
-    title: document.getElementById('n-title').value.trim(),
-    desc:  document.getElementById('n-desc').value.trim(),
-  };
-  if (!data.title) { showToast('Sarlavhani kiriting', 'warn'); return; }
+  const title = document.getElementById('n-title').value.trim();
+  if (!title) { showToast('Sarlavhani kiriting', 'warn'); document.getElementById('n-title').style.borderColor='var(--danger)'; setTimeout(()=>document.getElementById('n-title').style.borderColor='',2000); return; }
+  const data = { cat: document.getElementById('n-cat').value, title, desc: document.getElementById('n-desc').value.trim() };
   const res = await API.addNews(data);
   if (res) {
-    showToast('Yangilik qo\'shildi!', 'ok');
-    document.getElementById('n-title').value = '';
-    document.getElementById('n-desc').value  = '';
-  } else { showToast('Xato yuz berdi', 'err'); }
+    showToast("Yangilik qo'shildi!", 'ok');
+    auditLog("Yangilik qo'shildi", data.cat + ': ' + data.title);
+    document.getElementById('n-title').value = ''; document.getElementById('n-desc').value = '';
+    loadNewsList();
+  } else showToast('Xato yuz berdi', 'err');
 }
 
+async function deleteNews(id) {
+  if (!confirm("Ushbu yangilikni o'chirishni tasdiqlaysizmi?")) return;
+  await API.deleteNews(id);
+  showToast("Yangilik o'chirildi", 'ok');
+  auditLog("Yangilik o'chirildi", '#' + id);
+  loadNewsList();
+}
+
+// ── USER MANAGEMENT ──────────────────────────────────────────
+const ROLE_CONFIG_UI = {
+  super_admin:       { label:'Super Admin',        color:'var(--danger-text)',   pages:'Barchasi' },
+  transport_manager: { label:'Transport Manager',  color:'var(--warning-text)',  pages:'Dashboard, Marshrutlar, Jadval, Xarita, Chipta, Yangiliklar, Admin' },
+  operator:          { label:'Operator',           color:'var(--info-text)',     pages:'Dashboard, Chipta, Yangiliklar' },
+  viewer:            { label:'Viewer',             color:'var(--success-text)',  pages:'Dashboard, Marshrutlar, Jadval, Xarita, Chipta, Yangiliklar' },
+};
+
+function renderUsers() {
+  const grid = document.getElementById('user-grid');
+  grid.innerHTML = DEMO_USERS.map(u => {
+    const rc = ROLE_CONFIG_UI[u.role] || {};
+    const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const rConf = ROLE_CONFIG[u.role] || {};
+    return '<div class="user-card">' +
+      '<div class="uc-avatar">' + initials + '</div>' +
+      '<div class="uc-name">' + u.name + '</div>' +
+      '<div class="uc-user">@' + u.username + '</div>' +
+      '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);background:var(--bg-raised);color:' + (rc.color||'var(--text-secondary)') + '">' + (rc.label||u.role) + '</span>' +
+      '<div class="uc-perms">' +
+        '<span class="uc-perm ' + (rConf.canEdit?'ok':'no')   + '">' + (rConf.canEdit?'✓':'✕') + ' Tahrir</span>' +
+        '<span class="uc-perm ' + (rConf.canDelete?'ok':'no') + '">' + (rConf.canDelete?'✓':'✕') + " O'chirish</span>" +
+        '<span class="uc-perm ' + (rConf.canAdmin?'ok':'no')  + '">' + (rConf.canAdmin?'✓':'✕') + ' Admin</span>' +
+      '</div></div>';
+  }).join('');
+
+  document.getElementById('roles-tbody').innerHTML = Object.entries(ROLE_CONFIG).map(([role, cfg]) => {
+    const rc = ROLE_CONFIG_UI[role] || {};
+    function yn(v) { return v ? '<span style="color:var(--success-text);font-weight:700">✓ Ha</span>' : '<span style="color:var(--danger-text);font-weight:700">✕ Yo\'q</span>'; }
+    return '<tr>' +
+      '<td><span style="font-weight:700;color:' + (rc.color||'var(--text-secondary)') + '">' + (rc.label||role) + '</span></td>' +
+      '<td style="font-size:12px;color:var(--text-muted)">' + (rc.pages||'—') + '</td>' +
+      '<td style="text-align:center">' + yn(cfg.canEdit)   + '</td>' +
+      '<td style="text-align:center">' + yn(cfg.canDelete) + '</td>' +
+      '<td style="text-align:center">' + yn(cfg.canAdmin)  + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── AUDIT LOG ────────────────────────────────────────────────
+function renderAudit() {
+  const logs = getAuditLog();
+  document.getElementById('audit-badge').textContent = logs.length;
+  const el = document.getElementById('audit-list');
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon" style="font-size:28px">📋</div><div class="empty-state-title">Hali hech qanday harakat qayd qilinmagan</div></div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => {
+    const d = new Date(l.ts);
+    const time = d.toLocaleDateString('uz-UZ') + ' ' + d.toLocaleTimeString('uz-UZ', {hour:'2-digit',minute:'2-digit'});
+    return '<div class="audit-item">' +
+      '<div class="audit-time">' + time + '</div>' +
+      '<div class="audit-user">' + l.user + '</div>' +
+      '<div><span class="badge badge-muted" style="font-size:10px">' + l.role + '</span></div>' +
+      '<div><span class="audit-action">' + l.action + '</span>' + (l.detail ? ' <span class="audit-detail">— ' + l.detail + '</span>' : '') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function clearAudit() {
+  if (!confirm("Audit logini tozalashni tasdiqlaysizmi?")) return;
+  localStorage.removeItem('ti_audit');
+  renderAudit();
+  showToast('Audit log tozalandi', 'ok');
+}
+
+function updateAuditBadge() {
+  const count = getAuditLog().length;
+  const badge = document.getElementById('audit-badge');
+  if (badge) badge.textContent = count;
+}
+
+// ── INIT ─────────────────────────────────────────────────────
 loadManageList();
+loadStats();
+updateAuditBadge();
 </script>
 </body>
 </html>

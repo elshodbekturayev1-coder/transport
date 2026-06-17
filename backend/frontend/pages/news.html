@@ -14,36 +14,36 @@
     .news-item:hover .news-actions { opacity: 1; }
     .news-act-btn {
       padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
-      cursor: pointer; border: 1px solid; line-height: 1.4; font-family: var(--font-body);
+      cursor: pointer; border: 1px solid; line-height: 1.4; font-family: var(--font);
     }
     .news-edit-btn { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
-    .news-edit-btn:hover { border-color: var(--green); color: var(--green-text); }
-    .news-del-btn  { background: var(--red-dim); border-color: var(--red); color: var(--red-text); }
+    .news-edit-btn:hover { border-color: var(--success); color: var(--success-text); }
+    .news-del-btn  { background: var(--danger-dim); border-color: var(--danger); color: var(--danger-text); }
     .news-del-btn:hover { opacity: .8; }
 
     /* News item layout */
     .news-item {
       display: flex; gap: 14px; padding: 16px 20px;
       border-bottom: 1px solid var(--border);
-      transition: background var(--tr);
+      transition: background var(--t-base);
     }
     .news-item:last-child { border-bottom: none; }
-    .news-item:hover { background: var(--bg-hover); }
+    .news-item:hover { background: var(--bg-raised); }
     .news-cat { width: 4px; border-radius: 2px; flex-shrink: 0; min-height: 40px; }
-    .cat-danger .news-cat { background: var(--red); }
-    .cat-info   .news-cat { background: var(--blue); }
-    .cat-warn   .news-cat { background: var(--amber); }
-    .cat-ok     .news-cat { background: var(--green); }
+    .cat-danger .news-cat { background: var(--danger); }
+    .cat-info   .news-cat { background: var(--info); }
+    .cat-warn   .news-cat { background: var(--warning); }
+    .cat-ok     .news-cat { background: var(--success); }
     .news-body  { flex: 1; min-width: 0; }
     .news-badge {
       display: inline-block; font-size: 10px; font-weight: 700;
-      padding: 2px 8px; border-radius: var(--radius-full);
+      padding: 2px 8px; border-radius: var(--r-full);
       text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
     }
-    .cat-danger .news-badge { background: var(--red-dim);   color: var(--red-text); }
-    .cat-info   .news-badge { background: var(--blue-dim);  color: var(--blue-text); }
-    .cat-warn   .news-badge { background: var(--amber-dim); color: var(--amber-text); }
-    .cat-ok     .news-badge { background: var(--green-dim); color: var(--green-text); }
+    .cat-danger .news-badge { background: var(--danger-dim);  color: var(--danger-text); }
+    .cat-info   .news-badge { background: var(--info-dim);    color: var(--info-text); }
+    .cat-warn   .news-badge { background: var(--warning-dim); color: var(--warning-text); }
+    .cat-ok     .news-badge { background: var(--success-dim); color: var(--success-text); }
     .news-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .news-meta  { font-size: 11px; color: var(--text-muted); }
 
@@ -55,8 +55,8 @@
       animation: fadeIn .2s ease;
     }
     .modal-box {
-      background: var(--bg-panel); border: 1px solid var(--border);
-      border-radius: var(--radius-xl); width: 100%; max-width: 440px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-xl); width: 100%; max-width: 440px;
       box-shadow: var(--shadow-lg); animation: fadeInUp .25s ease;
     }
     .modal-head {
@@ -67,9 +67,9 @@
     .modal-close {
       background: none; border: none; color: var(--text-muted);
       font-size: 18px; cursor: pointer; padding: 2px 6px;
-      border-radius: var(--radius-sm); transition: all var(--tr);
+      border-radius: var(--r-sm); transition: all var(--t-base);
     }
-    .modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .modal-close:hover { background: var(--bg-raised); color: var(--text-primary); }
     .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
     .modal-foot {
       padding: 16px 24px; border-top: 1px solid var(--border);
@@ -82,26 +82,7 @@
 
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
-  <nav class="sidebar-nav">
-    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
-    <a href="/pages/routes.html"   class="nav-link"        data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
-    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
-    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
-    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
-    <a href="/pages/news.html"     class="nav-link active" data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
-    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div id="backend-status"></div>
-    <div class="sidebar-user">
-      <div id="sidebar-user-info"></div>
-      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
-    </div>
-    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
-  </div>
-</aside>
+<aside class="sidebar" id="sidebar"></aside>
 
 <!-- Edit modal -->
 <div class="modal-overlay hidden" id="edit-modal">
@@ -142,7 +123,7 @@
     <div class="header-title"><h1>Yangiliklar</h1><p>E'lonlar va tizim xabarlari</p></div>
     <div class="header-actions">
       <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
-      <div class="user-badge" id="user-badge">Admin</div>
+      <div class="user-badge" id="user-badge"></div>
     </div>
   </header>
 

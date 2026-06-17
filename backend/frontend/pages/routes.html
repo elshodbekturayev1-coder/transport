@@ -5,44 +5,64 @@
   <title>Marshrutlar — TransportInfo</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css"/>
+<style>
+.routes-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px 28px 0; }
+.rstat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-md);
+         padding:14px 18px; display:flex; align-items:center; gap:12px; cursor:pointer;
+         transition:border-color var(--t-base); }
+.rstat:hover { border-color:var(--border-md); }
+.rstat.active-filter { border-color:var(--accent); background:var(--accent-dim); }
+.rstat-icon { font-size:20px; }
+.rstat-val  { font-size:20px; font-weight:800; font-family:var(--font-mono); line-height:1; }
+.rstat-lbl  { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.search-wrap { position:relative; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.search-input { width:220px; padding:8px 12px 8px 34px; background:var(--bg-raised);
+                border:1px solid var(--border); border-radius:var(--r-md); color:var(--text-primary);
+                font-size:13px; font-family:var(--font); transition:border-color var(--t-base); }
+.search-input:focus { outline:none; border-color:var(--accent); }
+.search-input::placeholder { color:var(--text-muted); }
+</style>
 </head>
 <body>
 
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo"><div class="logo-mark">🚌</div><span>TransportInfo</span></div>
-  <nav class="sidebar-nav">
-    <a href="/index.html"          class="nav-link"        data-page="dashboard"><span class="nav-icon">◈</span> Dashboard</a>
-    <a href="/pages/routes.html"   class="nav-link active" data-page="routes">   <span class="nav-icon">⟶</span> Marshrutlar</a>
-    <a href="/pages/schedule.html" class="nav-link"        data-page="schedule"> <span class="nav-icon">◷</span> Jadval</a>
-    <a href="/pages/map.html"      class="nav-link"        data-page="map">      <span class="nav-icon">◉</span> Xarita</a>
-    <a href="/pages/tickets.html"  class="nav-link"        data-page="tickets">  <span class="nav-icon">◫</span> Chipta</a>
-    <a href="/pages/news.html"     class="nav-link"        data-page="news">     <span class="nav-icon">▣</span> Yangiliklar</a>
-    <a href="/pages/admin.html"    class="nav-link nav-link-admin" data-page="admin"><span class="nav-icon">⚙</span> Admin Panel</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div id="backend-status"></div>
-    <div class="sidebar-user">
-      <div id="sidebar-user-info"></div>
-      <button class="btn-logout" onclick="authLogout()">Chiqish →</button>
-    </div>
-    <div class="live-indicator"><span class="pulse"></span><span id="clock">00:00:00</span></div>
-  </div>
-</aside>
+<aside class="sidebar" id="sidebar"></aside>
 
 <main class="main-content">
   <header class="top-header">
     <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
     <div class="header-title"><h1>Marshrutlar</h1><p>Barcha faol transport yo'nalishlari</p></div>
     <div class="header-actions">
-      <button class="btn-outline" onclick="refreshData()">⟳ Yangilash</button>
+      <button class="btn-outline" onclick="doExportCSV()" style="font-size:12px;padding:8px 14px">↓ CSV</button>
+      <button class="btn-outline" onclick="loadRoutes()" style="font-size:12px;padding:8px 14px">⟳ Yangilash</button>
       <button class="theme-toggle" onclick="toggleTheme()" title="Tema"><span class="theme-icon">☀️</span></button>
-      <div class="user-badge" id="user-badge">Admin</div>
+      <div class="user-badge" id="user-badge"></div>
     </div>
   </header>
 
-  <div class="filter-bar" id="filter-bar">
+  <!-- Stats Cards -->
+  <div class="routes-stats">
+    <div class="rstat" onclick="filterRoutes('all',null)" id="rs-all">
+      <div class="rstat-icon">🗂</div>
+      <div><div class="rstat-val" id="cnt-all">—</div><div class="rstat-lbl">Jami</div></div>
+    </div>
+    <div class="rstat" onclick="filterRoutes('bus',null)" id="rs-bus">
+      <div class="rstat-icon">🚌</div>
+      <div><div class="rstat-val" id="cnt-bus">—</div><div class="rstat-lbl">Avtobus</div></div>
+    </div>
+    <div class="rstat" onclick="filterRoutes('metro',null)" id="rs-metro">
+      <div class="rstat-icon">🚇</div>
+      <div><div class="rstat-val" id="cnt-metro">—</div><div class="rstat-lbl">Metro</div></div>
+    </div>
+    <div class="rstat" onclick="filterRoutes('tram',null)" id="rs-tram">
+      <div class="rstat-icon">🚋</div>
+      <div><div class="rstat-val" id="cnt-tram">—</div><div class="rstat-lbl">Tramvay</div></div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <button class="chip active" onclick="filterRoutes('all',this)">Barchasi</button>
     <button class="chip" onclick="filterRoutes('bus',this)">🚌 Avtobus</button>
     <button class="chip" onclick="filterRoutes('metro',this)">🚇 Metro</button>
@@ -50,6 +70,12 @@
     <button class="chip" onclick="filterRoutes('active',this)">✓ Faol</button>
     <button class="chip" onclick="filterRoutes('delay',this)">⏱ Kechikmoqda</button>
     <button class="chip" onclick="filterRoutes('stopped',this)">⛔ To'xtatilgan</button>
+    <div style="margin-left:auto" class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" id="search-input" placeholder="Marshrut qidirish..." oninput="onSearch(this.value)"/>
+    </div>
   </div>
 
   <div class="panel-full">
@@ -59,8 +85,13 @@
     </div>
     <div class="data-table-wrap">
       <table class="data-table">
-        <thead><tr><th>Raqam</th><th>Tur</th><th>Yo'nalish</th><th>Bekatlar</th><th>Masofa</th><th>Ish vaqti</th><th>Holat</th><th>Jadval</th></tr></thead>
-        <tbody id="routes-tbody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Yuklanmoqda...</td></tr></tbody>
+        <thead><tr>
+          <th>Raqam</th><th>Tur</th><th>Yo'nalish</th>
+          <th>Bekatlar</th><th>Masofa</th><th>Ish vaqti</th><th>Holat</th><th>Jadval</th>
+        </tr></thead>
+        <tbody id="routes-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Yuklanmoqda...</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -71,19 +102,43 @@
 <script src="/js/app.js"></script>
 <script>
 let allRoutes = [];
+let activeFilter = 'all';
+let searchQuery  = '';
 
 async function loadRoutes() {
   allRoutes = await API.getRoutes();
+
+  // Update stats cards
+  document.getElementById('cnt-all').textContent   = allRoutes.length;
+  document.getElementById('cnt-bus').textContent   = allRoutes.filter(r=>r.type==='bus').length;
+  document.getElementById('cnt-metro').textContent = allRoutes.filter(r=>r.type==='metro').length;
+  document.getElementById('cnt-tram').textContent  = allRoutes.filter(r=>r.type==='tram').length;
+
   const urlFilter = new URLSearchParams(location.search).get('filter');
   if (urlFilter) {
+    activeFilter = urlFilter;
     const chip = [...document.querySelectorAll('#filter-bar .chip')]
-      .find(c => c.getAttribute('onclick') && c.getAttribute('onclick').includes("'" + urlFilter + "'"));
+      .find(c => c.getAttribute('onclick')?.includes("'" + urlFilter + "'"));
     if (chip) {
       document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      renderTable(allRoutes.filter(r => r.type === urlFilter || r.status === urlFilter));
-    } else renderTable(allRoutes);
-  } else renderTable(allRoutes);
+    }
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  let filtered = activeFilter === 'all' ? allRoutes
+    : allRoutes.filter(r => r.type === activeFilter || r.status === activeFilter);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(r =>
+      r.number.toLowerCase().includes(q) ||
+      r.name.toLowerCase().includes(q) ||
+      typeLabel(r.type).toLowerCase().includes(q)
+    );
+  }
+  renderTable(filtered);
 }
 
 function renderTable(routes) {
@@ -99,18 +154,37 @@ function renderTable(routes) {
       '<td style="color:var(--text-secondary)">' + r.km + ' km</td>' +
       '<td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">' + r.hours + '</td>' +
       '<td>' + statusBadge(r.status) + '</td>' +
-      '<td><span style="color:var(--green-text);font-size:12px;font-weight:500">Jadval →</span></td>' +
+      '<td><span style="color:var(--accent-text);font-size:12px;font-weight:600">Jadval →</span></td>' +
       '</tr>'
     ).join('');
 }
 
 function filterRoutes(key, btn) {
-  document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable(key === 'all' ? allRoutes : allRoutes.filter(r => r.type === key || r.status === key));
+  activeFilter = key;
+  if (btn) {
+    document.querySelectorAll('#filter-bar .chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  // Sync stats card highlight
+  ['all','bus','metro','tram'].forEach(k => {
+    document.getElementById('rs-' + k)?.classList.toggle('active-filter', k === key);
+  });
+  applyFilters();
 }
 
-function refreshData() { loadRoutes(); }
+function onSearch(val) {
+  searchQuery = val.trim();
+  applyFilters();
+}
+
+async function doExportCSV() {
+  const routes = await API.getRoutes();
+  exportCSV(routes.map(r => ({
+    Raqam: r.number, Tur: typeLabel(r.type), "Yo'nalish": r.name,
+    Bekatlar: r.stops, "Masofa(km)": r.km, "Ish vaqti": r.hours, Holat: r.status,
+  })), 'marshrutlar_' + new Date().toISOString().slice(0,10) + '.csv');
+}
+
 loadRoutes();
 </script>
 </body>

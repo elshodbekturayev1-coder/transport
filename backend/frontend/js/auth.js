@@ -58,7 +58,10 @@ function authLogout() {
 
 function applyRBAC() {
   const page = getCurrentPage();
-  if (page === 'login') return; // login page has no guard
+  if (page === 'login') return;
+
+  // Rebuild sidebar with SVG icons (defined in app.js, available by DOMContentLoaded)
+  if (typeof buildSidebar === 'function') buildSidebar();
 
   const user = getCurrentUser();
   if (!user) { location.href = '/pages/login.html'; return; }
